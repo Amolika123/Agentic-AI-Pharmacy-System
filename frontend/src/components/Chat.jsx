@@ -39,19 +39,24 @@ const CANCEL_BUTTONS = {
     DE: { yes: 'Ja, Bestellung stornieren', no: 'Nein, Bestellung behalten' }
 }
 
-function Chat() {
+function Chat({ customerId: propCustomerId, language: propLanguage }) {
+    // Use props if provided, otherwise use internal state
+    const [internalCustomerId, setInternalCustomerId] = useState('CUST001')
+    const [internalLanguage, setInternalLanguage] = useState('EN')
+
+    const customerId = propCustomerId || internalCustomerId
+    const selectedLanguage = propLanguage || internalLanguage
+
     const [messages, setMessages] = useState([
         {
             role: 'assistant',
-            content: WELCOME_MESSAGES.EN,
+            content: WELCOME_MESSAGES[selectedLanguage] || WELCOME_MESSAGES.EN,
             timestamp: new Date().toISOString()
         }
     ])
     const [inputValue, setInputValue] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [sessionId, setSessionId] = useState(null)
-    const [customerId, setCustomerId] = useState('CUST001')
-    const [selectedLanguage, setSelectedLanguage] = useState('EN')  // EN, HI, DE
     const [pendingConfirmation, setPendingConfirmation] = useState(null)
     const [isRecording, setIsRecording] = useState(false)
     const [systemStatus, setSystemStatus] = useState(null)

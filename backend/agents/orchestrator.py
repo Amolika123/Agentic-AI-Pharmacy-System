@@ -479,17 +479,64 @@ class OrchestratorAgent(BaseAgent):
     async def _confirm_order(self, context: AgentContext, trace: Any) -> Dict[str, Any]:
         """Confirm pending order or create order from extracted prescription."""
         
+        # Helper to add item to cart
+        def add_to_cart(customer_id: str, medicine: Dict, quantity: int):
+            """Add item to cart CSV."""
+            cart_path = Path(__file__).parent.parent / "data" / "carts.csv"
+            import uuid as uuid_mod
+            
+            # Load existing cart
+            carts = []
+            if cart_path.exists():
+                with open(cart_path, "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    carts = list(reader)
+            
+            # Check if item already in cart
+            existing = next((c for c in carts if c["customer_id"] == customer_id 
+                             and c["medicine_id"] == medicine.get("medicine_id", "")), None)
+            
+            if existing:
+                existing["quantity"] = str(int(existing["quantity"]) + quantity)
+            else:
+                new_item = {
+                    "cart_id": str(uuid_mod.uuid4())[:8],
+                    "customer_id": customer_id,
+                    "medicine_id": medicine.get("medicine_id", ""),
+                    "medicine_name": medicine.get("name", ""),
+                    "quantity": str(quantity),
+                    "unit_price": str(medicine.get("unit_price", 0)),
+                    "dosage_form": medicine.get("dosage_form", ""),
+                    "prescription_required": str(medicine.get("prescription_required", "false")).lower(),
+                    "added_at": datetime.utcnow().isoformat()
+                }
+                carts.append(new_item)
+            
+            # Save cart
+            fieldnames = ["cart_id", "customer_id", "medicine_id", "medicine_name", 
+                          "quantity", "unit_price", "dosage_form", "prescription_required", "added_at"]
+            with open(cart_path, "w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(carts)
+        
         # Scenario A: Pending single order (from text conversation)
         if context.pending_order:
+            # Add to cart first
+            pending = context.pending_order
+            medicine_info = pending.get("medicine", {})
+            if context.customer_id and medicine_info:
+                add_to_cart(context.customer_id, medicine_info, pending.get("quantity", 1))
+            
             exec_result = await self.agents["ExecutorAgent"].process(
                 input_data={"action": "confirm_order"},
                 context=context,
                 trace=trace
             )
             return self._build_response(
-                exec_result.message,
+                exec_result.message + "\n\n🛒 Items also added to your Cart!",
                 context, trace,
-                {"status": "confirmed", "order": exec_result.data.get("order")}
+                {"status": "confirmed", "order": exec_result.data.get("order"), "added_to_cart": True}
             )
         
         # Scenario B: Extracted prescription items waiting for confirmation
@@ -497,6 +544,7 @@ class OrchestratorAgent(BaseAgent):
         if extracted_rx:
             medicines = extracted_rx.get("medicines", [])
             orders_created = []
+            items_added_to_cart = 0
             
             for med in medicines:
                 # Create input for order creation
@@ -525,9 +573,16 @@ class OrchestratorAgent(BaseAgent):
                      # Note: We alreayd have the prescription trace, so we can override prescription requirement?
                      # Ideally VisionAgent confirms valid prescription.
                      
+                     medicine_data = safety_result.data.get("medicine", {})
+                     
+                     # Add to cart
+                     if context.customer_id and medicine_data:
+                         add_to_cart(context.customer_id, medicine_data, med.get("quantity", 1))
+                         items_added_to_cart += 1
+                     
                      # Create the order
                      create_result = await self.agents["ExecutorAgent"].process(
-                        input_data={"action": "create_order", "medicine": safety_result.data.get("medicine"), "quantity": med.get("quantity", 1)},
+                        input_data={"action": "create_order", "medicine": medicine_data, "quantity": med.get("quantity", 1)},
                         context=context,
                         trace=trace
                      )
@@ -548,9 +603,10 @@ class OrchestratorAgent(BaseAgent):
             
             count = len(orders_created)
             if count > 0:
-                msg = f"✅ confirmed! I've placed orders for {count} medicines from your prescription."
+                msg = f"✅ Confirmed! I've placed orders for {count} medicines from your prescription."
+                msg += f"\n\n🛒 **{items_added_to_cart} items added to your Cart!**"
                 msg += "\n\nYou'll receive confirmation messages shortly."
-                return self._build_response(msg, context, trace, {"status": "confirmed_bulk", "orders": orders_created})
+                return self._build_response(msg, context, trace, {"status": "confirmed_bulk", "orders": orders_created, "added_to_cart": items_added_to_cart})
             else:
                 return self._build_response("I couldn't process the orders. Please try again or contact support.", context, trace, {"status": "failed"})
 

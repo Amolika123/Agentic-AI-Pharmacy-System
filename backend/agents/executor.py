@@ -104,6 +104,10 @@ class ExecutorAgent(BaseAgent):
             "prescription_verified": medicine.get("prescription_required", "false") == "false"
         }
         
+        # Add to cart immediately so user can see items in Cart tab
+        if context.customer_id and medicine.get("medicine_id"):
+            self._add_to_cart(context.customer_id, medicine, quantity)
+        
         # Store in context for confirmation
         context.pending_order = order
         context.order_state = OrderState.CREATED
@@ -127,10 +131,51 @@ class ExecutorAgent(BaseAgent):
 📦 Quantity: {quantity}
 💰 Total: ₹{order['total']:.2f}
 
+🛒 **Items added to your Cart!**
+
 Would you like to confirm this order?""",
             requires_action=True,
             action_type="confirm_order"
         )
+    
+    def _add_to_cart(self, customer_id: str, medicine: Dict, quantity: int):
+        """Add item to cart CSV."""
+        cart_path = Path(__file__).parent.parent / "data" / "carts.csv"
+        
+        # Load existing cart
+        carts = []
+        if cart_path.exists():
+            with open(cart_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                carts = list(reader)
+        
+        # Check if item already in cart for this customer
+        existing = next((c for c in carts if c["customer_id"] == customer_id 
+                         and c["medicine_id"] == medicine.get("medicine_id", "")), None)
+        
+        if existing:
+            existing["quantity"] = str(int(existing["quantity"]) + int(quantity))
+        else:
+            new_item = {
+                "cart_id": uuid.uuid4().hex[:8],
+                "customer_id": customer_id,
+                "medicine_id": medicine.get("medicine_id", ""),
+                "medicine_name": medicine.get("name", ""),
+                "quantity": str(quantity),
+                "unit_price": str(medicine.get("unit_price", 0)),
+                "dosage_form": medicine.get("dosage_form", ""),
+                "prescription_required": str(medicine.get("prescription_required", "false")).lower(),
+                "added_at": datetime.now().isoformat()
+            }
+            carts.append(new_item)
+        
+        # Save cart
+        fieldnames = ["cart_id", "customer_id", "medicine_id", "medicine_name", 
+                      "quantity", "unit_price", "dosage_form", "prescription_required", "added_at"]
+        with open(cart_path, "w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(carts)
     
     async def _confirm_order(
         self,
