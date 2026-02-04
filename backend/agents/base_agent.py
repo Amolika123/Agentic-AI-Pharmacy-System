@@ -38,6 +38,10 @@ class AgentContext:
     def set_entity(self, key: str, value: Any):
         self.extracted_entities[key] = value
     
+    def get_entity(self, key: str, default: Any = None) -> Any:
+        """Get an entity from extracted entities."""
+        return self.extracted_entities.get(key, default)
+    
     def to_dict(self) -> Dict[str, Any]:
         return {
             "customer_id": self.customer_id,
