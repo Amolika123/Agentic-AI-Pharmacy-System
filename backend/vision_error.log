@@ -1,0 +1,10 @@
+Error: No module named 'easyocr'
+
+Traceback:
+Traceback (most recent call last):
+  File "C:\Users\amoli\OneDrive\Desktop\agentic-ai-system\backend\agents\vision.py", line 44, in process
+    extracted = await self._analyze_prescription_image(image_base64 or image_data)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amoli\OneDrive\Desktop\agentic-ai-system\backend\agents\vision.py", line 130, in _analyze_prescription_image
+    import easyocr
+ModuleNotFoundError: No module named 'easyocr'
