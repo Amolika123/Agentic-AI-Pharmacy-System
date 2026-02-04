@@ -1,0 +1,18 @@
+Client.predict() Usage Info
+---------------------------
+Named API endpoints: 1
+
+ - predict(model_name, text, image, max_new_tokens, temperature, top_p, top_k, repetition_penalty, api_name="/generate_image") -> (raw_output_stream, resultmd)
+    Parameters:
+     - [Radio] model_name: Literal['Nanonets-OCR2-3B', 'olmOCR-7B-0725', 'RolmOCR-7B', 'Aya-Vision-8B', 'Qwen2-VL-OCR-2B'] (not required, defaults to:   Nanonets-OCR2-3B)  
+     - [Textbox] text: str (required)  
+     - [Image] image: dict(path: str | None (Path to a local file), url: str | None (Publicly available url or base64 encoded image), size: int | None (Size of image in bytes), orig_name: str | None (Original filename), mime_type: str | None (mime type of image), is_stream: bool (Can always be set to False), meta: dict(str, Any)) (required)  (For input, either path or url must be provided. For output, path is always provided.) 
+     - [Slider] max_new_tokens: float (not required, defaults to:   1024)  
+     - [Slider] temperature: float (not required, defaults to:   0.7)  
+     - [Slider] top_p: float (not required, defaults to:   0.9)  
+     - [Slider] top_k: float (not required, defaults to:   50)  
+     - [Slider] repetition_penalty: float (not required, defaults to:   1.1)  
+    Returns:
+     - [Textbox] raw_output_stream: str 
+     - [Markdown] resultmd: str 
+

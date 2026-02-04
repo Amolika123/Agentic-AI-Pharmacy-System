@@ -1,0 +1,4 @@
+{
+  "0": "Endpoint src: https://prithivmlmods-multimodal-ocr.hf.space, api_name: /load_example, fn_index: 0",
+  "1": "Endpoint src: https://prithivmlmods-multimodal-ocr.hf.space, api_name: /generate_image, fn_index: 1"
+}

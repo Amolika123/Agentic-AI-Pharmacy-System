@@ -1,0 +1,9 @@
+id,name,category,quantity,unit,price,restrictions,active
+INV001,Paper,office,500,reams,25.00,,true
+INV002,Toner Cartridge,office,25,units,75.00,,true
+INV003,Chemical X,restricted,100,liters,150.00,requires_approval,true
+INV004,Safety Gloves,safety,200,pairs,15.00,,true
+INV005,Printer Paper A4,office,1000,reams,20.00,,true
+INV006,Hazardous Solvent,hazardous,50,liters,200.00,requires_safety_approval,true
+INV007,Cleaning Supplies,general,150,units,10.00,,true
+INV008,Lab Equipment,restricted,20,units,500.00,requires_approval,true

@@ -1,0 +1,26 @@
+medicine_id,name,generic_name,category,stock_quantity,unit,unit_price,prescription_required,manufacturer,dosage_form,strength,reorder_level,active
+MED001,Paracetamol 500mg,Paracetamol,Pain Relief,498,tablets,2.50,false,GSK,Tablet,500mg,100,true
+MED002,Ibuprofen 400mg,Ibuprofen,Pain Relief,347,tablets,3.00,false,Cipla,Tablet,400mg,75,true
+MED003,Amoxicillin 500mg,Amoxicillin,Antibiotic,200,capsules,8.50,true,Sun Pharma,Capsule,500mg,50,true
+MED004,Azithromycin 250mg,Azithromycin,Antibiotic,150,tablets,12.00,true,Zydus,Tablet,250mg,40,true
+MED005,Cetirizine 10mg,Cetirizine,Antihistamine,400,tablets,1.50,false,Dr Reddy's,Tablet,10mg,80,true
+MED006,Omeprazole 20mg,Omeprazole,Gastro,300,capsules,4.00,false,Ranbaxy,Capsule,20mg,60,true
+MED007,Metformin 500mg,Metformin,Diabetes,250,tablets,2.00,true,USV,Tablet,500mg,50,true
+MED008,Amlodipine 5mg,Amlodipine,Cardiac,180,tablets,3.50,true,Intas,Tablet,5mg,40,true
+MED009,Atorvastatin 10mg,Atorvastatin,Cardiac,200,tablets,5.00,true,Biocon,Tablet,10mg,45,true
+MED010,Losartan 50mg,Losartan,Cardiac,220,tablets,4.50,true,Lupin,Tablet,50mg,50,true
+MED011,Vitamin D3 1000IU,Cholecalciferol,Vitamins,600,softgels,1.00,false,HealthKart,Softgel,1000IU,100,true
+MED012,Vitamin B Complex,B-Complex,Vitamins,450,tablets,0.80,false,Himalaya,Tablet,N/A,90,true
+MED013,Cough Syrup,Dextromethorphan,Cold & Cough,120,bottles,45.00,false,Dabur,Syrup,15mg/5ml,30,true
+MED014,Salbutamol Inhaler,Salbutamol,Respiratory,80,inhalers,150.00,true,Cipla,Inhaler,100mcg,20,true
+MED015,Insulin Glargine,Insulin,Diabetes,45,pens,850.00,true,Sanofi,Injection,100U/ml,15,true
+MED016,Pantoprazole 40mg,Pantoprazole,Gastro,280,tablets,5.50,false,Alkem,Tablet,40mg,55,true
+MED017,Montelukast 10mg,Montelukast,Respiratory,160,tablets,7.00,true,Zydus,Tablet,10mg,35,true
+MED018,Aspirin 75mg,Aspirin,Cardiac,500,tablets,1.20,false,Bayer,Tablet,75mg,100,true
+MED019,Diclofenac Gel,Diclofenac,Pain Relief,90,tubes,65.00,false,Novartis,Gel,1% w/w,25,true
+MED020,ORS Sachets,Oral Rehydration,General,300,sachets,5.00,false,WHO,Powder,N/A,60,true
+MED021,Levothyroxine 50mcg,Levothyroxine,Thyroid,140,tablets,3.00,true,Abbott,Tablet,50mcg,30,true
+MED022,Fluconazole 150mg,Fluconazole,Antifungal,100,capsules,25.00,true,Pfizer,Capsule,150mg,25,true
+MED023,Ciprofloxacin 500mg,Ciprofloxacin,Antibiotic,180,tablets,10.00,true,Ranbaxy,Tablet,500mg,40,true
+MED024,Ranitidine 150mg,Ranitidine,Gastro,350,tablets,2.50,false,GSK,Tablet,150mg,70,true
+MED025,Multivitamin Daily,Multivitamins,Vitamins,400,tablets,1.50,false,Centrum,Tablet,N/A,80,true

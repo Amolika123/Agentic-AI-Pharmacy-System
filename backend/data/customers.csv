@@ -1,0 +1,11 @@
+customer_id,name,phone,email,date_of_birth,language,address,registered_date,chronic_conditions,allergies,active
+CUST001,Rajesh Kumar,+91-9876543210,rajesh.kumar@email.com,1975-03-15,en,42 MG Road Mumbai,2023-01-15,Hypertension;Diabetes,Penicillin,true
+CUST002,Priya Sharma,+91-9876543211,priya.sharma@email.com,1988-07-22,hi,15 Nehru Street Delhi,2023-02-20,None,None,true
+CUST003,Hans Mueller,+49-1512345678,hans.mueller@email.de,1965-11-08,de,Berliner Str 45 Munich,2023-03-10,Cardiac;Cholesterol,Sulfa,true
+CUST004,Anita Patel,+91-9876543212,anita.patel@email.com,1982-05-30,en,78 Gandhi Nagar Ahmedabad,2023-04-05,Thyroid,None,true
+CUST005,Mohammed Ali,+91-9876543213,mohammed.ali@email.com,1970-09-12,en,23 Park Street Kolkata,2023-05-18,Diabetes;Respiratory,Aspirin,true
+CUST006,Sunita Verma,+91-9876543214,sunita.verma@email.com,1992-01-25,hi,56 Lake View Bangalore,2023-06-22,None,None,true
+CUST007,Ramesh Iyer,+91-9876543215,ramesh.iyer@email.com,1958-12-03,en,89 Temple Road Chennai,2023-07-30,Cardiac;Hypertension;Diabetes,None,true
+CUST008,Fatima Khan,+91-9876543216,fatima.khan@email.com,1985-04-17,en,34 Civil Lines Lucknow,2023-08-14,Asthma,Dust,true
+CUST009,Vikram Singh,+91-9876543217,vikram.singh@email.com,1978-06-28,hi,67 Sector 15 Chandigarh,2023-09-01,Cholesterol,None,true
+CUST010,Meera Nair,+91-9876543218,meera.nair@email.com,1995-10-10,en,12 Beach Road Kochi,2023-10-12,None,None,true
