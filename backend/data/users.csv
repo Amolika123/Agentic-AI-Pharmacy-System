@@ -1,0 +1,5 @@
+id,name,email,language_preference,department,role,monthly_budget
+user_001,John Smith,john.smith@company.com,en,Engineering,Engineer,5000
+user_002,Maria Schmidt,maria.schmidt@company.com,de,Operations,Manager,10000
+user_003,Pierre Dubois,pierre.dubois@company.com,fr,Research,Scientist,7500
+user_004,Anna Mueller,anna.mueller@company.com,de,Safety,Safety Officer,8000

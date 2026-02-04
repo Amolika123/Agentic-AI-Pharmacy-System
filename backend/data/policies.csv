@@ -1,0 +1,11 @@
+rule_id,rule_name,description,condition_type,condition_value,action,message_template,priority,active
+RULE001,prescription_required,Block orders for prescription medicines without verification,requires_prescription,true,require_prescription,{medicine} requires a valid prescription. Please upload or verify your prescription.,1,true
+RULE002,stock_check,Ensure medicine is in stock before order,stock_level,0,block_order,Sorry {medicine} is currently out of stock. Expected restock: {restock_date},1,true
+RULE003,low_stock_alert,Alert when stock below reorder level,stock_below_reorder,true,alert_admin,Low stock alert: {medicine} has {current_stock} units remaining (reorder level: {reorder_level}),2,true
+RULE004,quantity_limit,Maximum quantity per order for controlled items,max_quantity,90,limit_quantity,Maximum order quantity for {medicine} is {limit} units per order,2,true
+RULE005,allergy_check,Warn if customer has known allergy,customer_allergy,true,warn_user,⚠️ Warning: You have a recorded allergy to {allergen}. {medicine} may cause adverse reactions. Please consult your doctor.,1,true
+RULE006,drug_interaction,Check for potential drug interactions,interaction_check,true,warn_user,⚠️ Potential interaction: {medicine} may interact with {interacting_drug}. Consult your pharmacist.,2,true
+RULE007,age_restriction,Certain medicines restricted by age,min_age,18,require_verification,{medicine} requires age verification (18+ only),2,true
+RULE008,refill_too_early,Prevent early refills of controlled substances,days_since_last,14,block_order,Your last order of {medicine} was {days_ago} days ago. Refills allowed after {min_days} days.,1,true
+RULE009,chronic_medication_reminder,Remind for chronic condition medications,chronic_condition,true,send_reminder,Reminder: Based on your condition ({condition}) you may need to refill {medicine} soon.,3,true
+RULE010,bulk_order_review,Large orders require pharmacist review,quantity_above,50,require_approval,Order of {quantity} units of {medicine} requires pharmacist approval.,2,true
