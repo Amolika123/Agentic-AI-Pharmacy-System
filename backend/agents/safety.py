@@ -168,12 +168,15 @@ class SafetyAgent(BaseAgent):
                 )
                 
         except Exception as e:
+            import traceback
+            print(f"[SafetyAgent ERROR] {type(e).__name__}: {e}")
+            traceback.print_exc()
             if span:
                 span.end(output={"error": str(e)})
             return AgentResponse(
                 success=False,
                 data={"error": str(e)},
-                message="An error occurred during safety validation. Please try again."
+                message=f"An error occurred during safety validation: {str(e)}"
             )
     
     def _find_medicine(self, name: str) -> Optional[Dict]:

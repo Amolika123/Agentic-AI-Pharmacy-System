@@ -392,8 +392,11 @@ class OrchestratorAgent(BaseAgent):
         
         # Handle safety response
         if not safety_result.success:
+            # Pass through the actual safety error message with more context
+            error_msg = safety_result.message
+            print(f"[ORCH] Safety check failed: {error_msg}")
             return self._build_response(
-                safety_result.message,
+                error_msg,
                 context, trace,
                 {"status": "blocked", "safety": safety_result.data}
             )

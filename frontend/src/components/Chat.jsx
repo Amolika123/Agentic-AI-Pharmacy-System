@@ -39,7 +39,7 @@ const CANCEL_BUTTONS = {
     DE: { yes: 'Ja, Bestellung stornieren', no: 'Nein, Bestellung behalten' }
 }
 
-function Chat({ customerId: propCustomerId, language: propLanguage }) {
+function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate }) {
     // Use props if provided, otherwise use internal state
     const [internalCustomerId, setInternalCustomerId] = useState('CUST001')
     const [internalLanguage, setInternalLanguage] = useState('EN')
@@ -215,6 +215,11 @@ function Chat({ customerId: propCustomerId, language: propLanguage }) {
                 setCancelConfirmation({ sessionId: data.session_id, message: data.response })
             }
 
+            // Refresh cart if items were added
+            if (data.data?.added_to_cart && onCartUpdate) {
+                onCartUpdate()
+            }
+
         } catch (error) {
             setMessages(prev => [...prev, {
                 role: 'assistant',
@@ -251,6 +256,8 @@ function Chat({ customerId: propCustomerId, language: propLanguage }) {
         } finally {
             setIsLoading(false)
             setPendingConfirmation(null)
+            // Refresh cart after confirmation
+            if (onCartUpdate) onCartUpdate()
         }
     }
 

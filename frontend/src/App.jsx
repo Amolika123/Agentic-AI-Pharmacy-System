@@ -225,20 +225,22 @@ function App() {
                         <AdminDashboard systemStatus={systemStatus} />
                     ) : (
                         <>
-                            {activeView === 'chat' && (
+                            {/* Use CSS display to retain state instead of conditional rendering */}
+                            <div style={{ display: activeView === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
                                 <Chat
                                     customerId={customerId}
                                     language={selectedLanguage}
+                                    onCartUpdate={loadCart}
                                 />
-                            )}
-                            {activeView === 'catalog' && (
+                            </div>
+                            <div style={{ display: activeView === 'catalog' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
                                 <Catalog
                                     onAddToCart={handleAddToCart}
                                     cartItems={cartItems}
                                     language={selectedLanguage}
                                 />
-                            )}
-                            {activeView === 'cart' && (
+                            </div>
+                            <div style={{ display: activeView === 'cart' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
                                 <Cart
                                     cartItems={cartItems}
                                     onUpdateQuantity={handleUpdateQuantity}
@@ -247,7 +249,7 @@ function App() {
                                     customerId={customerId}
                                     language={selectedLanguage}
                                 />
-                            )}
+                            </div>
                         </>
                     )}
                 </main>

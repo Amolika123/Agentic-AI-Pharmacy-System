@@ -1,2 +1,2 @@
 cart_id,customer_id,medicine_id,medicine_name,quantity,unit_price,dosage_form,prescription_required,added_at
-878f7348,CUST001,MED001,Paracetamol 500mg,7,2.50,Tablet,false,2026-02-04T22:13:12.817858
+878f7348,CUST001,MED001,Paracetamol 500mg,12,2.50,Tablet,false,2026-02-04T22:13:12.817858
