@@ -103,6 +103,14 @@ class VisionAgent(BaseAgent):
             )
             
         except Exception as e:
+            # DEBUG: Log the error to a file
+            import traceback
+            try:
+                with open("vision_error.log", "w") as f:
+                    f.write(f"Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}")
+            except:
+                pass
+                
             if span:
                 span.end(output={"error": str(e)})
             # FAIL-SAFE: Don't say "failed", offer manual help
@@ -118,115 +126,126 @@ class VisionAgent(BaseAgent):
             )
     
     async def _analyze_prescription_image(self, image_base64: str) -> Dict[str, Any]:
-        """Use HuggingFace Multimodal-OCR to extract prescription details."""
-        import json
-        import tempfile
-        import os
+        """Use local EasyOCR to extract prescription details offline."""
+        import easyocr
+        import numpy as np
         import base64
+        import re
+        from io import BytesIO
+        from PIL import Image
         
-        # PROMPT for the model
-        prompt = """You are a MULTIMODAL PHARMACY AI. Analyze this prescription image.
-
-MANDATORY: Return valid JSON only. Structure:
-{
-  "medicines": [
-    {
-      "name": "Medicine name",
-      "dosage": "Strength (e.g. 500mg) or null",
-      "quantity": "count or null",
-      "frequency": "frequency or null",
-      "duration": "duration or null"
-    }
-  ],
-  "doctor_name": "name or null",
-  "patient_name": "name or null",
-  "date": "date or null",
-  "confidence": 0.8
-}
-
-CRITICAL:
-1. Extract ALL medicines visible.
-2. If text is unclear, infer context but do not guess wildy.
-3. Return ONLY valid JSON.
-"""
-
         try:
-            # 1. Decode base64 to temp file (Gradio requires file path)
+            # 1. Decode base64 to image bytes
             if "," in image_base64:
                 image_base64 = image_base64.split(",")[1]
             
             image_bytes = base64.b64decode(image_base64)
             
-            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_img:
-                temp_img.write(image_bytes)
-                temp_path = temp_img.name
+            # 2. Initialize EasyOCR Reader (Local, Offline)
+            # Use English by default as per requirements.
+            # Using 'en' only for speed and reliability, but supports others.
+            reader = easyocr.Reader(['en'], gpu=False, verbose=False) # CPU safe mode
             
-            try:
-                # 2. Call HuggingFace Space via Gradio Client
-                from gradio_client import Client
-                
-                hf_token = os.getenv("HF_TOKEN")
-                print(f"[VISION] Connecting to prithivMLmods/Multimodal-OCR with token: {'Yes' if hf_token else 'No'}...")
-                
-                # Use 'token' argument (not hf_token) for authentication in this version
-                client = Client("prithivMLmods/Multimodal-OCR", token=hf_token)
-                
-                # Predict: model_name, text, image, params...
-                # API signature: predict(model_name, text, image, ...) -> (raw_output, match_output)
-                result = client.predict(
-                    model_name="Nanonets-OCR2-3B", # Using default strong model
-                    text=prompt,
-                    image=temp_path,
-                    api_name="/generate_image"
-                )
-                
-                # Result is a tuple: (raw_text, markdown_text)
-                # We want the raw text which usually contains the JSON
-                if isinstance(result, (list, tuple)) and len(result) > 0:
-                    response_text = str(result[0])
-                else:
-                    response_text = str(result)
-                    
-                print(f"[VISION] HF Response: {response_text[:100]}...")
-                
-                # 3. Parse JSON from response
-                if "```json" in response_text:
-                    response_text = response_text.split("```json")[1].split("```")[0].strip()
-                elif "```" in response_text:
-                    response_text = response_text.split("```")[1].split("```")[0].strip()
-                
-                # Clean up any non-JSON prefix/suffix if present
-                if "{" in response_text:
-                    start = response_text.index("{")
-                    end = response_text.rindex("}") + 1
-                    response_text = response_text[start:end]
-                
-                extracted = json.loads(response_text)
-                
-                # Add partial_extraction flag if not present
-                extracted["partial_extraction"] = extracted.get("partial_extraction", True)
-                
-                # Match against inventory
-                extracted["medicines"] = self._match_medicines_to_inventory(extracted.get("medicines", []))
-                
-                return extracted
-
-            except ImportError:
-                return {
-                    "medicines": [], 
-                    "error": "gradio_client not installed. Run: pip install gradio_client",
-                    "partial_extraction": False
-                }
-            except Exception as e:
-                print(f"[VISION ERROR] {e}")
-                return {"medicines": [], "error": str(e), "partial_extraction": False}
-            finally:
-                # Cleanup temp file
-                if os.path.exists(temp_path):
-                    os.unlink(temp_path)
+            # 3. Read text from image bytes
+            # EasyOCR reads bytes directly
+            raw_results = reader.readtext(image_bytes)
+            
+            # 4. Process results
+            # Format: [(bbox, text, confidence), ...]
+            detected_lines = []
+            full_text = []
+            
+            for (bbox, text, prob) in raw_results:
+                if prob > 0.3: # Filter low confidence
+                    detected_lines.append({
+                        "text": text,
+                        "confidence": float(prob)
+                    })
+                    full_text.append(text)
+            
+            print(f"[VISION] EasyOCR Extracted: {full_text}")
+            
+            # 5. Local Parsing & Medicine Matching
+            extracted_medicines = self._parse_extracted_text(detected_lines)
+            
+            # 6. Structure response
+            return {
+                "medicines": extracted_medicines,
+                "confidence": sum([l['confidence'] for l in detected_lines]) / max(len(detected_lines), 1),
+                "partial_extraction": len(extracted_medicines) == 0, # If we found text but no medicines
+                "raw_text": full_text
+            }
                         
         except Exception as e:
+            print(f"[VISION ERROR] EasyOCR failed: {e}")
             return {"medicines": [], "error": str(e), "partial_extraction": False}
+
+    def _parse_extracted_text(self, lines: List[Dict]) -> List[Dict]:
+        """
+        Parse raw OCR text lines to identify medicines and dosages locally.
+        Uses fuzzy matching against inventory and regex for dosage.
+        """
+        import re
+        
+        extracted_medicines = []
+        
+        # Regex for common dosage forms
+        dosage_pattern = re.compile(r'(\d+(?:[\.,]\d+)?\s*(?:mg|ml|g|mcg|iu|tablets|capsules|tab|cap))', re.IGNORECASE)
+        frequency_pattern = re.compile(r'(once|twice|thrice|\d+\s*times?)\s*(?:a|per)?\s*(?:day|daily)', re.IGNORECASE)
+        
+        # We try to identify lines that contain medicine names
+        # Match each line against inventory first
+        
+        # Temporarily use the matching logic to find candidates
+        # We need the inventory for fuzzy matching
+        matched_candidates = self._match_medicines_to_inventory([{"name": line["text"]} for line in lines])
+        
+        for i, candidate in enumerate(matched_candidates):
+            line_text = lines[i]["text"]
+            
+            # If matched against inventory, it's definitely a medicine
+            if candidate.get("matched"):
+                # Look for dosage in the SAME line or NEXT line
+                dosage_match = dosage_pattern.search(line_text)
+                dosage = dosage_match.group(1) if dosage_match else None
+                
+                # If no dosage in current line, check next line
+                if not dosage and i + 1 < len(lines):
+                    next_line = lines[i+1]["text"]
+                    dosage_match = dosage_pattern.search(next_line)
+                    if dosage_match:
+                        dosage = dosage_match.group(1)
+                
+                extracted_medicines.append({
+                    "name": candidate["inventory_name"], # Use official name
+                    "original_text": line_text,
+                    "dosage": dosage,
+                    "quantity": None, # Hard to infer quantity from OCR without LLM
+                    "frequency": None,
+                    "duration": None
+                })
+            
+            # If not matched, but looks like a medicine line (has dosage)?
+            # This is riskier without LLM context. 
+            # For now, let's stick to inventory matches or strict formatting if needed.
+            # But the requirement says "Extract detected text".
+            # Let's add unmatched lines that have clear dosage patterns as potential medicines
+            elif dosage_pattern.search(line_text):
+                # Heuristic: If it has a dosage, treat remaining text as name
+                dosage_match = dosage_pattern.search(line_text)
+                name_part = line_text.replace(dosage_match.group(0), "").strip()
+                
+                if len(name_part) > 3: # Avoid noise
+                    extracted_medicines.append({
+                        "name": name_part,
+                        "dosage": dosage_match.group(1),
+                        "quantity": None,
+                        "frequency": None,
+                        "duration": None,
+                        "matched": False
+                    })
+
+        return extracted_medicines
     
     def _format_extraction_result(self, extracted: Dict[str, Any]) -> str:
         """Format extracted prescription for MANDATORY user confirmation."""

@@ -5,4 +5,4 @@ python-multipart>=0.0.6
 pydantic>=2.5.0
 langfuse>=2.50.0
 python-dotenv>=1.0.0
-gradio_client>=0.10.0
+easyocr>=1.7.0
