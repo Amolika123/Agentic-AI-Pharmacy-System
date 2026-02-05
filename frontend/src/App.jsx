@@ -223,7 +223,7 @@ function AppContent() {
                     ) : (
                         <>
                             {/* Use CSS display to retain state instead of conditional rendering */}
-                            <div style={{ display: activeView === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
+                            <div style={{ display: activeView === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'row', gap: '1.5rem' }}>
                                 <Chat
                                     customerId={customerId}
                                     onCartUpdate={loadCart}
