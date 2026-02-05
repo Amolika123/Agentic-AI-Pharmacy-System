@@ -1,56 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '../LanguageContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
-// LANGUAGE CONFIGURATION - Visible tabs for EN, HI, DE
+// CHAT COMPONENT - Uses global language context for translations
 // ═══════════════════════════════════════════════════════════════════════════
-const LANGUAGES = {
-    EN: { code: 'en', label: 'English', native: 'English' },
-    HI: { code: 'hi', label: 'Hindi', native: 'हिंदी' },
-    DE: { code: 'de', label: 'German', native: 'Deutsch' }
-}
 
-const LANGUAGE_CONFIRMATIONS = {
-    EN: "🌐 Language set to English.",
-    HI: "🌐 भाषा हिंदी में बदल दी गई है।",
-    DE: "🌐 Sprache auf Deutsch umgestellt."
-}
+function Chat({ customerId: propCustomerId, onCartUpdate }) {
+    const { language, setLanguage, t, langCode, LANGUAGES } = useLanguage()
 
-const WELCOME_MESSAGES = {
-    EN: '👋 Welcome to our Smart Pharmacy!\n\nI\'m your AI pharmacist assistant. I can help you:\n• Order medicines (just tell me what you need)\n• Check medicine availability\n• Refill your prescriptions\n• Answer questions about your medications\n\nHow can I help you today?',
-    HI: '👋 हमारी स्मार्ट फार्मेसी में आपका स्वागत है!\n\nमैं आपका AI फार्मासिस्ट सहायक हूँ। मैं आपकी मदद कर सकता हूँ:\n• दवाइयाँ ऑर्डर करें\n• दवाई की उपलब्धता जाँचें\n• प्रिस्क्रिप्शन रिफिल करें\n• दवाओं के बारे में सवाल पूछें\n\nआज मैं आपकी कैसे मदद कर सकता हूँ?',
-    DE: '👋 Willkommen in unserer Smart-Apotheke!\n\nIch bin Ihr KI-Apotheker-Assistent. Ich kann Ihnen helfen:\n• Medikamente bestellen\n• Medikamentenverfügbarkeit prüfen\n• Rezepte nachfüllen\n• Fragen zu Ihren Medikamenten beantworten\n\nWie kann ich Ihnen heute helfen?'
-}
-
-const QUICK_ACTIONS = {
-    EN: ["I need Paracetamol", "Check if Ibuprofen is available", "Refill my prescription", "Cancel my order"],
-    HI: ["मुझे पैरासिटामोल चाहिए", "आइबुप्रोफेन उपलब्ध है?", "मेरी दवाई रिफिल करें", "मेरा ऑर्डर रद्द करें"],
-    DE: ["Ich brauche Paracetamol", "Ist Ibuprofen verfügbar?", "Mein Rezept nachfüllen", "Meine Bestellung stornieren"]
-}
-
-const PLACEHOLDERS = {
-    EN: 'Type your medicine order or question...',
-    HI: 'अपनी दवाई का ऑर्डर या प्रश्न लिखें...',
-    DE: 'Geben Sie Ihre Bestellung oder Frage ein...'
-}
-
-const CANCEL_BUTTONS = {
-    EN: { yes: 'Yes, cancel my order', no: 'No, keep my order' },
-    HI: { yes: 'हाँ, ऑर्डर रद्द करें', no: 'नहीं, ऑर्डर रखें' },
-    DE: { yes: 'Ja, Bestellung stornieren', no: 'Nein, Bestellung behalten' }
-}
-
-function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate }) {
     // Use props if provided, otherwise use internal state
     const [internalCustomerId, setInternalCustomerId] = useState('CUST001')
-    const [internalLanguage, setInternalLanguage] = useState('EN')
 
     const customerId = propCustomerId || internalCustomerId
-    const selectedLanguage = propLanguage || internalLanguage
 
     const [messages, setMessages] = useState([
         {
             role: 'assistant',
-            content: WELCOME_MESSAGES[selectedLanguage] || WELCOME_MESSAGES.EN,
+            content: t('chat.welcome'),
             timestamp: new Date().toISOString()
         }
     ])
@@ -80,6 +46,21 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
         initVoiceRecognition()
         fetchRefillAlerts()
     }, [])
+
+    // Update welcome message when language changes
+    useEffect(() => {
+        setMessages(prev => {
+            // Update only the first message (welcome message) if it exists
+            if (prev.length === 0) return prev
+            return [
+                {
+                    ...prev[0],
+                    content: t('chat.welcome')
+                },
+                ...prev.slice(1)
+            ]
+        })
+    }, [language])
 
     // Fetch refill alerts when customer changes
     useEffect(() => {
@@ -142,13 +123,18 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
     // LANGUAGE TAB HANDLER - Instant switch with confirmation message
     // ═══════════════════════════════════════════════════════════════════════
     const handleLanguageChange = (langKey) => {
-        if (langKey === selectedLanguage) return
-        setSelectedLanguage(langKey)
+        if (langKey === language) return
+        setLanguage(langKey)
 
-        // Add confirmation message to chat
+        // Add confirmation message to chat (use translation after state update)
+        const confirmations = {
+            EN: t('chat.languageChanged'),
+            HI: 'भाषा हिंदी में बदल दी गई है।',
+            DE: 'Sprache auf Deutsch umgestellt.'
+        }
         setMessages(prev => [...prev, {
             role: 'assistant',
-            content: LANGUAGE_CONFIRMATIONS[langKey],
+            content: `🌐 ${confirmations[langKey] || t('chat.languageChanged')}`,
             timestamp: new Date().toISOString()
         }])
     }
@@ -187,7 +173,7 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
                     customer_id: customerId,
                     session_id: sessionId,
                     is_voice: isRecording,
-                    language: LANGUAGES[selectedLanguage].code
+                    language: langCode
                 })
             })
 
@@ -286,10 +272,9 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
             const base64String = reader.result
             setImagePreview(base64String)
 
-            // Add user message with image preview locally
             const userMessage = {
                 role: 'user',
-                content: '📄 Uploaded Prescription',
+                content: t('chat.uploadedPrescription'),
                 timestamp: new Date().toISOString(),
                 image: base64String
             }
@@ -305,7 +290,7 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
                         customer_id: customerId,
                         session_id: sessionId,
                         image_data: base64String,
-                        language: LANGUAGES[selectedLanguage].code
+                        language: langCode
                     })
                 })
 
@@ -334,7 +319,7 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
                 console.error('Upload failed:', error)
                 setMessages(prev => [...prev, {
                     role: 'assistant',
-                    content: '⚠️ Failed to upload. Please check backend connection.',
+                    content: t('chat.uploadError'),
                     timestamp: new Date().toISOString()
                 }])
             } finally {
@@ -346,7 +331,7 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
     }
 
     // Dynamic quick actions based on selected language
-    const quickActions = QUICK_ACTIONS[selectedLanguage]
+    const quickActions = t('chat.quickActions') || []
 
     const customerOptions = [
         { id: 'CUST001', name: 'Rajesh Kumar' },
@@ -359,7 +344,7 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
         <>
             <div className="chat-container">
                 <div className="chat-header">
-                    <h2 className="chat-title">🏥 Smart Pharmacy</h2>
+                    <h2 className="chat-title">{t('chat.title')}</h2>
 
                     {/* ═══════════════════════════════════════════════════════════════ */}
                     {/* LANGUAGE TABS - Always visible, instant switch */}
@@ -368,7 +353,7 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
                         {Object.entries(LANGUAGES).map(([key, lang]) => (
                             <button
                                 key={key}
-                                className={`lang-btn ${selectedLanguage === key ? 'active' : ''}`}
+                                className={`lang-btn ${language === key ? 'active' : ''}`}
                                 onClick={() => handleLanguageChange(key)}
                             >
                                 {lang.native}
@@ -462,14 +447,14 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
                     <button
                         className={`voice-btn ${isRecording ? 'recording' : ''}`}
                         onClick={toggleVoice}
-                        title="Voice input"
+                        title={t('chat.voiceInput')}
                     >
                         {isRecording ? '⏹' : '🎤'}
                     </button>
                     <input
                         type="text"
                         className="chat-input"
-                        placeholder={PLACEHOLDERS[selectedLanguage]}
+                        placeholder={t('chat.placeholder')}
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyPress={handleKeyPress}
@@ -488,40 +473,40 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
             {/* Sidebar */}
             <aside className="sidebar">
                 <div className="sidebar-card">
-                    <h3>⚙️ System Status</h3>
+                    <h3>{t('sidebar.systemStatus')}</h3>
                     <div className="status-grid">
                         <div className="status-item">
-                            <div className="status-label">Ollama</div>
+                            <div className="status-label">{t('sidebar.ollama')}</div>
                             <div className={`status-value ${systemStatus?.ollama?.available ? 'active' : 'inactive'}`}>
-                                ● {systemStatus?.ollama?.available ? 'Connected' : 'Offline'}
+                                ● {systemStatus?.ollama?.available ? t('sidebar.connected') : t('app.offline')}
                             </div>
                         </div>
                         <div className="status-item">
-                            <div className="status-label">API Keys</div>
-                            <div className="status-value active">● Not Required</div>
+                            <div className="status-label">{t('sidebar.apiKeys')}</div>
+                            <div className="status-value active">● {t('sidebar.notRequired')}</div>
                         </div>
                         <div className="status-item">
-                            <div className="status-label">Langfuse</div>
+                            <div className="status-label">{t('sidebar.langfuse')}</div>
                             <div className={`status-value ${systemStatus?.observability?.langfuse ? 'active' : ''}`}>
-                                ● {systemStatus?.observability?.langfuse ? 'Enabled' : 'Mock Mode'}
+                                ● {systemStatus?.observability?.langfuse ? t('sidebar.enabled') : t('sidebar.mockMode')}
                             </div>
                         </div>
                         <div className="status-item">
-                            <div className="status-label">Agents</div>
-                            <div className="status-value active">● 5 Active</div>
+                            <div className="status-label">{t('sidebar.agents')}</div>
+                            <div className="status-value active">● {t('sidebar.agentsActive')}</div>
                         </div>
                     </div>
                 </div>
 
                 <div className="sidebar-card">
-                    <h3>💊 Quick Reference</h3>
+                    <h3>{t('sidebar.quickReference')}</h3>
                     <div className="inventory-list">
                         {['Paracetamol', 'Ibuprofen', 'Cetirizine', 'Omeprazole'].map((med, idx) => (
                             <div key={idx} className="inventory-item"
                                 onClick={() => sendMessage(`I need ${med}`)}
                                 style={{ cursor: 'pointer' }}>
                                 <div className="inventory-name">{med}</div>
-                                <div className="inventory-quantity">In Stock</div>
+                                <div className="inventory-quantity">{t('sidebar.inStock')}</div>
                             </div>
                         ))}
                     </div>
@@ -531,29 +516,27 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
                     background: 'rgba(34, 197, 94, 0.1)',
                     borderColor: 'rgba(34, 197, 94, 0.3)'
                 }}>
-                    <h3>✨ Features</h3>
+                    <h3>{t('sidebar.features')}</h3>
                     <ul style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', paddingLeft: '1rem', margin: 0 }}>
-                        <li>🗣️ Voice & Text Orders</li>
-                        <li>📋 Prescription Verification</li>
-                        <li>⚠️ Allergy Warnings</li>
-                        <li>🔄 Proactive Refill Alerts</li>
-                        <li>🔍 Full Observability</li>
+                        {(t('sidebar.featuresList') || []).map((feature, idx) => (
+                            <li key={idx}>{feature}</li>
+                        ))}
                     </ul>
                 </div>
 
                 {/* Refill Alerts Panel */}
                 {refillAlerts.length > 0 && (
                     <div className="sidebar-card">
-                        <h3>🔔 Refill Alerts</h3>
+                        <h3>{t('sidebar.refillAlerts')}</h3>
                         <div className="alerts-list">
                             {refillAlerts.map((alert, idx) => (
                                 <div key={idx} className={`alert-item ${alert.priority || 'medium'}`} onClick={() => handleRefill(alert)}>
                                     <div className="alert-title">{alert.medicine_name}</div>
                                     <div className="alert-body">
-                                        Running low ({alert.days_left} days left)
+                                        {t('sidebar.runningLow')} ({alert.days_left} {t('sidebar.daysLeft')})
                                     </div>
                                     <div className="alert-actions">
-                                        <button className="alert-action-btn">Refill Now</button>
+                                        <button className="alert-action-btn">{t('sidebar.refillNow')}</button>
                                     </div>
                                 </div>
                             ))}
@@ -565,12 +548,12 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
 
             {pendingConfirmation && (
                 <div className="confirmation-dialog">
-                    <span>Confirm your order?</span>
+                    <span>{t('chat.confirmOrder')}</span>
                     <button className="confirm-btn" onClick={() => handleConfirmation(true)}>
-                        ✓ Yes, Place Order
+                        {t('chat.confirmYes')}
                     </button>
                     <button className="cancel-btn" onClick={() => handleConfirmation(false)}>
-                        ✗ Cancel
+                        {t('chat.confirmCancel')}
                     </button>
                 </div>
             )}
@@ -580,12 +563,12 @@ function Chat({ customerId: propCustomerId, language: propLanguage, onCartUpdate
             {/* ═══════════════════════════════════════════════════════════════════════ */}
             {cancelConfirmation && (
                 <div className="confirmation-dialog" style={{ borderColor: 'var(--warning)' }}>
-                    <span>⚠️ {selectedLanguage === 'HI' ? 'ऑर्डर रद्द करें?' : selectedLanguage === 'DE' ? 'Bestellung stornieren?' : 'Cancel your order?'}</span>
+                    <span>⚠️ {t('chat.cancelConfirm')}</span>
                     <button className="confirm-btn" style={{ background: 'var(--error)' }} onClick={() => handleCancelConfirmation(true)}>
-                        {CANCEL_BUTTONS[selectedLanguage].yes}
+                        {t('chat.cancelYes')}
                     </button>
                     <button className="cancel-btn" onClick={() => handleCancelConfirmation(false)}>
-                        {CANCEL_BUTTONS[selectedLanguage].no}
+                        {t('chat.cancelNo')}
                     </button>
                 </div>
             )}

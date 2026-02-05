@@ -1,52 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '../LanguageContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // REGISTRATION COMPONENT - AI-guided conversational registration
+// Uses global language context for translations
 // ═══════════════════════════════════════════════════════════════════════════
 
-const TEXTS = {
-    EN: {
-        title: 'Create Account',
-        subtitle: 'Chat with our AI to register',
-        startBtn: 'Start Registration',
-        placeholder: 'Type your answer...',
-        switchToLogin: 'Already have an account?',
-        benefits: [
-            '💬 Conversational ordering via chat',
-            '🛒 Browse our medicine catalog',
-            '🔔 Personalized refill reminders',
-            '📋 Prescription upload & analysis'
-        ]
-    },
-    DE: {
-        title: 'Konto erstellen',
-        subtitle: 'Chatten Sie mit unserer KI zur Registrierung',
-        startBtn: 'Registrierung starten',
-        placeholder: 'Geben Sie Ihre Antwort ein...',
-        switchToLogin: 'Haben Sie bereits ein Konto?',
-        benefits: [
-            '💬 Bestellung per Chat',
-            '🛒 Medikamentenkatalog durchsuchen',
-            '🔔 Personalisierte Nachfüllerinnerungen',
-            '📋 Rezept-Upload & Analyse'
-        ]
-    },
-    HI: {
-        title: 'खाता बनाएं',
-        subtitle: 'पंजीकरण के लिए AI से चैट करें',
-        startBtn: 'पंजीकरण शुरू करें',
-        placeholder: 'अपना जवाब लिखें...',
-        switchToLogin: 'पहले से खाता है?',
-        benefits: [
-            '💬 चैट के माध्यम से ऑर्डर',
-            '🛒 दवाई कैटलॉग देखें',
-            '🔔 व्यक्तिगत रिफिल रिमाइंडर',
-            '📋 प्रिस्क्रिप्शन अपलोड'
-        ]
-    }
-}
-
-function Registration({ language = 'EN', onComplete, onSwitchToLogin }) {
+function Registration({ onComplete, onSwitchToLogin }) {
+    const { t, langCode } = useLanguage()
     const [messages, setMessages] = useState([])
     const [inputValue, setInputValue] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -55,9 +16,6 @@ function Registration({ language = 'EN', onComplete, onSwitchToLogin }) {
     const [registrationComplete, setRegistrationComplete] = useState(false)
     const [newCustomerId, setNewCustomerId] = useState(null)
     const messagesEndRef = useRef(null)
-
-    const t = TEXTS[language] || TEXTS.EN
-    const langCode = language.toLowerCase()
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -184,12 +142,12 @@ function Registration({ language = 'EN', onComplete, onSwitchToLogin }) {
                 <div className="registration-landing">
                     <div className="registration-hero">
                         <span className="hero-icon">🏥</span>
-                        <h1 className="hero-title">{t.title}</h1>
-                        <p className="hero-subtitle">{t.subtitle}</p>
+                        <h1 className="hero-title">{t('registration.title')}</h1>
+                        <p className="hero-subtitle">{t('registration.subtitle')}</p>
                     </div>
 
                     <div className="registration-benefits">
-                        {t.benefits.map((benefit, idx) => (
+                        {(t('registration.benefits') || []).map((benefit, idx) => (
                             <div key={idx} className="benefit-item">
                                 {benefit}
                             </div>
@@ -201,14 +159,14 @@ function Registration({ language = 'EN', onComplete, onSwitchToLogin }) {
                         onClick={startRegistration}
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Starting...' : t.startBtn}
+                        {isLoading ? t('registration.starting') : t('registration.startBtn')}
                     </button>
 
                     {onSwitchToLogin && (
                         <p className="switch-prompt">
-                            {t.switchToLogin}{' '}
+                            {t('registration.switchToLogin')}{' '}
                             <button className="link-btn" onClick={onSwitchToLogin}>
-                                Login
+                                {t('registration.login')}
                             </button>
                         </p>
                     )}
@@ -222,7 +180,7 @@ function Registration({ language = 'EN', onComplete, onSwitchToLogin }) {
         <div className="registration-container">
             <div className="registration-chat">
                 <div className="registration-header">
-                    <h2>📝 {t.title}</h2>
+                    <h2>📝 {t('registration.title')}</h2>
                     {registrationComplete && newCustomerId && (
                         <span className="customer-id-badge">ID: {newCustomerId}</span>
                     )}
@@ -260,7 +218,7 @@ function Registration({ language = 'EN', onComplete, onSwitchToLogin }) {
                         <input
                             type="text"
                             className="registration-input"
-                            placeholder={t.placeholder}
+                            placeholder={t('registration.placeholder')}
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyPress={handleKeyPress}

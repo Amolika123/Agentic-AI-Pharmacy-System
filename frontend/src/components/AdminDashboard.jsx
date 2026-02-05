@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '../LanguageContext'
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ADMIN DASHBOARD - Administrative overview panel
+// Uses global language context for translations
+// ═══════════════════════════════════════════════════════════════════════════
 
 function AdminDashboard({ systemStatus }) {
+    const { t } = useLanguage()
     const [inventory, setInventory] = useState([])
     const [alerts, setAlerts] = useState([])
     const [orders, setOrders] = useState([])

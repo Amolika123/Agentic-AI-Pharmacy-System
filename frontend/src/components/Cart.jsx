@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useLanguage } from '../LanguageContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHOPPING CART COMPONENT - Cart panel with checkout flow
+// Uses global language context for translations
 // ═══════════════════════════════════════════════════════════════════════════
 
 function Cart({
@@ -9,58 +11,11 @@ function Cart({
     onUpdateQuantity,
     onRemoveItem,
     onCheckout,
-    customerId,
-    language = 'EN'
+    customerId
 }) {
+    const { t } = useLanguage()
     const [checkingOut, setCheckingOut] = useState(false)
     const [checkoutMessage, setCheckoutMessage] = useState(null)
-
-    const TEXTS = {
-        EN: {
-            title: 'Shopping Cart',
-            empty: 'Your cart is empty',
-            emptyDesc: 'Browse the catalog and add medicines to your cart',
-            quantity: 'Qty',
-            remove: 'Remove',
-            subtotal: 'Subtotal',
-            total: 'Total',
-            checkout: 'Proceed to Checkout',
-            processing: 'Processing...',
-            prescriptionNote: '📋 Some items require prescription. Upload during checkout.',
-            loginRequired: 'Please log in to checkout',
-            items: 'items'
-        },
-        DE: {
-            title: 'Warenkorb',
-            empty: 'Ihr Warenkorb ist leer',
-            emptyDesc: 'Durchsuchen Sie den Katalog und fügen Sie Medikamente hinzu',
-            quantity: 'Menge',
-            remove: 'Entfernen',
-            subtotal: 'Zwischensumme',
-            total: 'Gesamt',
-            checkout: 'Zur Kasse gehen',
-            processing: 'Wird bearbeitet...',
-            prescriptionNote: '📋 Einige Artikel sind rezeptpflichtig.',
-            loginRequired: 'Bitte melden Sie sich an',
-            items: 'Artikel'
-        },
-        HI: {
-            title: 'शॉपिंग कार्ट',
-            empty: 'आपका कार्ट खाली है',
-            emptyDesc: 'कैटलॉग देखें और दवाइयाँ जोड़ें',
-            quantity: 'मात्रा',
-            remove: 'हटाएं',
-            subtotal: 'उप-योग',
-            total: 'कुल',
-            checkout: 'चेकआउट करें',
-            processing: 'प्रोसेस हो रहा है...',
-            prescriptionNote: '📋 कुछ दवाइयों के लिए प्रिस्क्रिप्शन ज़रूरी है',
-            loginRequired: 'कृपया लॉगिन करें',
-            items: 'आइटम'
-        }
-    }
-
-    const t = TEXTS[language] || TEXTS.EN
 
     const calculateSubtotal = () => {
         return cartItems.reduce((sum, item) => {
@@ -72,7 +27,7 @@ function Cart({
 
     const handleCheckout = async () => {
         if (!customerId) {
-            setCheckoutMessage({ type: 'error', text: t.loginRequired })
+            setCheckoutMessage({ type: 'error', text: t('cart.loginRequired') })
             return
         }
 
@@ -87,7 +42,7 @@ function Cart({
                 setCheckoutMessage({ type: 'error', text: result.message })
             }
         } catch (error) {
-            setCheckoutMessage({ type: 'error', text: 'Checkout failed. Please try again.' })
+            setCheckoutMessage({ type: 'error', text: t('cart.checkoutFailed') })
         } finally {
             setCheckingOut(false)
         }
@@ -97,12 +52,12 @@ function Cart({
         return (
             <div className="cart-container">
                 <div className="cart-header">
-                    <h2 className="cart-title">🛒 {t.title}</h2>
+                    <h2 className="cart-title">🛒 {t('cart.title')}</h2>
                 </div>
                 <div className="cart-empty">
                     <span className="empty-icon">🛒</span>
-                    <h3>{t.empty}</h3>
-                    <p>{t.emptyDesc}</p>
+                    <h3>{t('cart.empty')}</h3>
+                    <p>{t('cart.emptyDesc')}</p>
                 </div>
             </div>
         )
@@ -111,8 +66,8 @@ function Cart({
     return (
         <div className="cart-container">
             <div className="cart-header">
-                <h2 className="cart-title">🛒 {t.title}</h2>
-                <span className="cart-count">{cartItems.length} {t.items}</span>
+                <h2 className="cart-title">🛒 {t('cart.title')}</h2>
+                <span className="cart-count">{cartItems.length} {t('cart.items')}</span>
             </div>
 
             <div className="cart-items">
@@ -154,7 +109,7 @@ function Cart({
                             <button
                                 className="remove-btn"
                                 onClick={() => onRemoveItem(item.medicine_id)}
-                                title={t.remove}
+                                title={t('cart.remove')}
                             >
                                 🗑️
                             </button>
@@ -165,17 +120,17 @@ function Cart({
 
             {hasPrescriptionItems && (
                 <div className="cart-prescription-note">
-                    {t.prescriptionNote}
+                    {t('cart.prescriptionNote')}
                 </div>
             )}
 
             <div className="cart-summary">
                 <div className="summary-row">
-                    <span>{t.subtotal}</span>
+                    <span>{t('cart.subtotal')}</span>
                     <span>₹{calculateSubtotal().toFixed(2)}</span>
                 </div>
                 <div className="summary-row total">
-                    <span>{t.total}</span>
+                    <span>{t('cart.total')}</span>
                     <span>₹{calculateSubtotal().toFixed(2)}</span>
                 </div>
             </div>
@@ -191,7 +146,7 @@ function Cart({
                 onClick={handleCheckout}
                 disabled={checkingOut}
             >
-                {checkingOut ? t.processing : t.checkout}
+                {checkingOut ? t('cart.processing') : t('cart.checkout')}
             </button>
         </div>
     )
