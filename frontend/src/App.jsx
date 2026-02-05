@@ -1,22 +1,20 @@
 import { useState, useEffect } from 'react'
+import { LanguageProvider, useLanguage } from './LanguageContext'
 import Chat from './components/Chat'
 import AdminDashboard from './components/AdminDashboard'
 import Catalog from './components/Catalog'
 import Cart from './components/Cart'
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIN APP WITH SIDE NAVIGATION
+// MAIN APP WITH SIDE NAVIGATION & GLOBAL LANGUAGE SUPPORT
 // Patient Mode: Chat | Catalog | Cart (side tabs)
 // Admin Mode: Separate dashboard
+// All UI text managed via centralized translation system
 // ═══════════════════════════════════════════════════════════════════════════
 
-const LANGUAGES = {
-    EN: { code: 'en', label: 'English', native: 'EN' },
-    DE: { code: 'de', label: 'German', native: 'DE' },
-    HI: { code: 'hi', label: 'Hindi', native: 'HI' }
-}
+function AppContent() {
+    const { language, setLanguage, t, langCode, LANGUAGES } = useLanguage()
 
-function App() {
     // Navigation state
     const [mode, setMode] = useState('patient') // 'patient' or 'admin'
     const [activeView, setActiveView] = useState('chat') // 'chat', 'catalog', 'cart'
@@ -24,7 +22,6 @@ function App() {
 
     // Shared state
     const [customerId, setCustomerId] = useState('CUST001')
-    const [selectedLanguage, setSelectedLanguage] = useState('EN')
     const [cartItems, setCartItems] = useState([])
     const [cartNotification, setCartNotification] = useState(false)
 
@@ -109,7 +106,7 @@ function App() {
                 body: JSON.stringify({
                     customer_id: customerId,
                     items: cartItems,
-                    language: LANGUAGES[selectedLanguage].code
+                    language: langCode
                 })
             })
 
@@ -117,12 +114,12 @@ function App() {
 
             if (data.success) {
                 setCartItems([])
-                return { success: true, message: data.message || 'Order placed successfully!' }
+                return { success: true, message: data.message || t('cart.checkout') }
             } else {
-                return { success: false, message: data.error || 'Checkout failed' }
+                return { success: false, message: data.error || t('cart.checkoutFailed') }
             }
         } catch (error) {
-            return { success: false, message: 'Unable to process checkout. Please try again.' }
+            return { success: false, message: t('cart.checkoutFailed') }
         }
     }
 
@@ -133,11 +130,11 @@ function App() {
         { id: 'CUST007', name: 'Ramesh Iyer' }
     ]
 
-    // Side navigation items for patient mode
+    // Side navigation items for patient mode - translated labels
     const sideNavItems = [
-        { id: 'chat', icon: '💬', label: 'Chat' },
-        { id: 'catalog', icon: '🛒', label: 'Catalog' },
-        { id: 'cart', icon: '🛍️', label: 'Cart', badge: cartItems.length > 0 ? cartItems.length : null }
+        { id: 'chat', icon: '💬', label: t('nav.chat') },
+        { id: 'catalog', icon: '🛒', label: t('nav.catalog') },
+        { id: 'cart', icon: '🛍️', label: t('nav.cart'), badge: cartItems.length > 0 ? cartItems.length : null }
     ]
 
     return (
@@ -146,7 +143,7 @@ function App() {
             <header className="app-header">
                 <div className="logo">
                     <div className="logo-icon">🤖</div>
-                    <span className="logo-text">Agentic Pharmacy</span>
+                    <span className="logo-text">{t('app.title')}</span>
                 </div>
 
                 {/* Mode Toggle */}
@@ -155,13 +152,13 @@ function App() {
                         className={`nav-tab ${mode === 'patient' ? 'active' : ''}`}
                         onClick={() => { setMode('patient'); setActiveView('chat') }}
                     >
-                        🏥 Patient
+                        {t('app.patient')}
                     </button>
                     <button
                         className={`nav-tab ${mode === 'admin' ? 'active' : ''}`}
                         onClick={() => setMode('admin')}
                     >
-                        📊 Admin
+                        {t('app.admin')}
                     </button>
                 </nav>
 
@@ -171,8 +168,8 @@ function App() {
                         {Object.entries(LANGUAGES).map(([key, lang]) => (
                             <button
                                 key={key}
-                                className={`lang-mini-btn ${selectedLanguage === key ? 'active' : ''}`}
-                                onClick={() => setSelectedLanguage(key)}
+                                className={`lang-mini-btn ${language === key ? 'active' : ''}`}
+                                onClick={() => setLanguage(key)}
                             >
                                 {lang.native}
                             </button>
@@ -193,7 +190,7 @@ function App() {
 
                     <div className="status-indicator">
                         <span className={`status-dot ${systemStatus?.ollama?.available ? 'active' : ''}`}></span>
-                        <span>{systemStatus?.ollama?.available ? 'Online' : 'Offline'}</span>
+                        <span>{systemStatus?.ollama?.available ? t('app.online') : t('app.offline')}</span>
                     </div>
                 </div>
             </header>
@@ -229,7 +226,6 @@ function App() {
                             <div style={{ display: activeView === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
                                 <Chat
                                     customerId={customerId}
-                                    language={selectedLanguage}
                                     onCartUpdate={loadCart}
                                 />
                             </div>
@@ -237,7 +233,6 @@ function App() {
                                 <Catalog
                                     onAddToCart={handleAddToCart}
                                     cartItems={cartItems}
-                                    language={selectedLanguage}
                                 />
                             </div>
                             <div style={{ display: activeView === 'cart' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
@@ -247,7 +242,6 @@ function App() {
                                     onRemoveItem={handleRemoveItem}
                                     onCheckout={handleCheckout}
                                     customerId={customerId}
-                                    language={selectedLanguage}
                                 />
                             </div>
                         </>
@@ -255,6 +249,15 @@ function App() {
                 </main>
             </div>
         </div>
+    )
+}
+
+// Wrap the app with LanguageProvider for global language state
+function App() {
+    return (
+        <LanguageProvider>
+            <AppContent />
+        </LanguageProvider>
     )
 }
 

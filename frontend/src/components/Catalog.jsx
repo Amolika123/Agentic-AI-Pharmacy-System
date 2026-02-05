@@ -1,21 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '../LanguageContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CATALOG/MARKETPLACE COMPONENT - Amazon-style product browsing
+// Uses global language context for translations
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CATEGORY_FILTERS = [
-    { id: 'all', label: 'All', icon: '🏥' },
-    { id: 'Pain Relief', label: 'Pain Relief', icon: '💊' },
-    { id: 'Antibiotic', label: 'Antibiotics', icon: '🦠' },
-    { id: 'Vitamins', label: 'Vitamins', icon: '🍊' },
-    { id: 'Cardiac', label: 'Cardiac', icon: '❤️' },
-    { id: 'Diabetes', label: 'Diabetes', icon: '🩸' },
-    { id: 'Gastro', label: 'Gastro', icon: '🫃' },
-    { id: 'Respiratory', label: 'Respiratory', icon: '🫁' }
-]
+function Catalog({ onAddToCart, cartItems = [] }) {
+    const { t, language } = useLanguage()
 
-function Catalog({ onAddToCart, cartItems = [], language = 'EN' }) {
     const [medicines, setMedicines] = useState([])
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedCategory, setSelectedCategory] = useState('all')
@@ -23,49 +16,17 @@ function Catalog({ onAddToCart, cartItems = [], language = 'EN' }) {
     const [loading, setLoading] = useState(true)
     const [addingToCart, setAddingToCart] = useState(null)
 
-    const TEXTS = {
-        EN: {
-            title: 'Medicine Catalog',
-            search: 'Search medicines...',
-            addToCart: 'Add to Cart',
-            adding: 'Adding...',
-            inCart: 'In Cart',
-            inStock: 'In Stock',
-            outOfStock: 'Out of Stock',
-            prescription: 'Rx Required',
-            details: 'View Details',
-            close: 'Close',
-            noResults: 'No medicines found'
-        },
-        DE: {
-            title: 'Medikamentenkatalog',
-            search: 'Medikamente suchen...',
-            addToCart: 'In den Warenkorb',
-            adding: 'Hinzufügen...',
-            inCart: 'Im Warenkorb',
-            inStock: 'Auf Lager',
-            outOfStock: 'Nicht vorrätig',
-            prescription: 'Rezeptpflichtig',
-            details: 'Details anzeigen',
-            close: 'Schließen',
-            noResults: 'Keine Medikamente gefunden'
-        },
-        HI: {
-            title: 'दवाई कैटलॉग',
-            search: 'दवाइयाँ खोजें...',
-            addToCart: 'कार्ट में डालें',
-            adding: 'जोड़ रहे हैं...',
-            inCart: 'कार्ट में है',
-            inStock: 'स्टॉक में',
-            outOfStock: 'स्टॉक में नहीं',
-            prescription: 'प्रिस्क्रिप्शन ज़रूरी',
-            details: 'विवरण देखें',
-            close: 'बंद करें',
-            noResults: 'कोई दवाई नहीं मिली'
-        }
-    }
-
-    const t = TEXTS[language] || TEXTS.EN
+    // Dynamic category filters with translated labels
+    const CATEGORY_FILTERS = [
+        { id: 'all', label: t('categories.all'), icon: '🏥' },
+        { id: 'Pain Relief', label: t('categories.painRelief'), icon: '💊' },
+        { id: 'Antibiotic', label: t('categories.antibiotics'), icon: '🦠' },
+        { id: 'Vitamins', label: t('categories.vitamins'), icon: '🍊' },
+        { id: 'Cardiac', label: t('categories.cardiac'), icon: '❤️' },
+        { id: 'Diabetes', label: t('categories.diabetes'), icon: '🩸' },
+        { id: 'Gastro', label: t('categories.gastro'), icon: '🫃' },
+        { id: 'Respiratory', label: t('categories.respiratory'), icon: '🫁' }
+    ]
 
     useEffect(() => {
         fetchMedicines()
@@ -106,16 +67,16 @@ function Catalog({ onAddToCart, cartItems = [], language = 'EN' }) {
     }
 
     const getStockStatus = (quantity) => {
-        if (quantity <= 0) return { class: 'out-of-stock', text: t.outOfStock }
-        if (quantity < 50) return { class: 'low-stock', text: `${quantity} left` }
-        return { class: 'in-stock', text: t.inStock }
+        if (quantity <= 0) return { class: 'out-of-stock', text: t('catalog.outOfStock') }
+        if (quantity < 50) return { class: 'low-stock', text: `${quantity} ${t('catalog.left')}` }
+        return { class: 'in-stock', text: t('catalog.inStock') }
     }
 
     if (loading) {
         return (
             <div className="catalog-loading">
                 <div className="loading-spinner"></div>
-                <p>Loading catalog...</p>
+                <p>{t('catalog.loading')}</p>
             </div>
         )
     }
@@ -124,12 +85,12 @@ function Catalog({ onAddToCart, cartItems = [], language = 'EN' }) {
         <div className="catalog-container">
             {/* Header */}
             <div className="catalog-header">
-                <h2 className="catalog-title">🛒 {t.title}</h2>
+                <h2 className="catalog-title">🛒 {t('catalog.title')}</h2>
                 <div className="catalog-search">
                     <span className="search-icon">🔍</span>
                     <input
                         type="text"
-                        placeholder={t.search}
+                        placeholder={t('catalog.search')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="catalog-search-input"
@@ -156,7 +117,7 @@ function Catalog({ onAddToCart, cartItems = [], language = 'EN' }) {
                 {filteredMedicines.length === 0 ? (
                     <div className="no-results">
                         <span className="no-results-icon">🔍</span>
-                        <p>{t.noResults}</p>
+                        <p>{t('catalog.noResults')}</p>
                     </div>
                 ) : (
                     filteredMedicines.map(medicine => {
@@ -173,7 +134,7 @@ function Catalog({ onAddToCart, cartItems = [], language = 'EN' }) {
                                 {/* Prescription Badge */}
                                 {medicine.prescription_required && (
                                     <div className="prescription-badge">
-                                        <span>📋 {t.prescription}</span>
+                                        <span>📋 {t('catalog.prescription')}</span>
                                     </div>
                                 )}
 
@@ -216,7 +177,7 @@ function Catalog({ onAddToCart, cartItems = [], language = 'EN' }) {
                                             }}
                                             disabled={inCart || isAdding || medicine.stock_quantity <= 0}
                                         >
-                                            {isAdding ? t.adding : inCart ? t.inCart : t.addToCart}
+                                            {isAdding ? t('catalog.adding') : inCart ? t('catalog.inCart') : t('catalog.addToCart')}
                                         </button>
                                     </div>
                                 </div>
@@ -282,7 +243,7 @@ function Catalog({ onAddToCart, cartItems = [], language = 'EN' }) {
 
                         <div className="modal-footer">
                             <button className="modal-close-btn" onClick={() => setSelectedMedicine(null)}>
-                                {t.close}
+                                {t('catalog.close')}
                             </button>
                             <button
                                 className={`modal-add-btn ${isInCart(selectedMedicine.medicine_id) ? 'in-cart' : ''}`}
@@ -294,7 +255,7 @@ function Catalog({ onAddToCart, cartItems = [], language = 'EN' }) {
                                 }}
                                 disabled={isInCart(selectedMedicine.medicine_id) || selectedMedicine.stock_quantity <= 0}
                             >
-                                {isInCart(selectedMedicine.medicine_id) ? t.inCart : t.addToCart}
+                                {isInCart(selectedMedicine.medicine_id) ? t('catalog.inCart') : t('catalog.addToCart')}
                             </button>
                         </div>
                     </div>

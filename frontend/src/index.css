@@ -428,6 +428,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  order: 1; /* Position sidebar to the right of chat */
 }
 
 .sidebar-card {
