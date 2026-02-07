@@ -10,3 +10,5 @@ CUST008,Fatima Khan,+91-9876543216,fatima.khan@email.com,1985-04-17,en,34 Civil 
 CUST009,Vikram Singh,+91-9876543217,vikram.singh@email.com,1978-06-28,hi,67 Sector 15 Chandigarh,2023-09-01,Cholesterol,None,true
 CUST010,Meera Nair,+91-9876543218,meera.nair@email.com,1995-10-10,en,12 Beach Road Kochi,2023-10-12,None,None,true
 CUST011,Test Patient,+91-1234567890,patient@test.com,1990-01-15,en,123 Test Street,2026-02-07,None,None,true
+CUST012,Priya Ram,+91-123456987,priya.ram@email.com,1999-11-04,en,"52, Bund Garden, Pune",2026-02-07,None,penicillin,true
+CUST013,Liv,+91-123456966,Liv@email.com,1998-11-04,en,"52,Bund Garden, Mumbai",2026-02-07,Diabetes,None,true

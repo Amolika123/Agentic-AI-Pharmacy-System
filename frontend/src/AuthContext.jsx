@@ -83,7 +83,9 @@ export function AuthProvider({ children }) {
             }
 
             if (!response.ok) {
-                throw new Error(data.detail || 'Registration failed')
+                const errorMessage = data.detail || 'Registration failed. Please check your connection or try again.'
+                console.error('Registration Failed:', errorMessage)
+                throw new Error(errorMessage)
             }
 
             // Auto-login after registration
@@ -94,6 +96,7 @@ export function AuthProvider({ children }) {
 
             return { success: true, user: data.user }
         } catch (err) {
+            console.error('Registration Error:', err)
             setError(err.message)
             return { success: false, error: err.message }
         }
