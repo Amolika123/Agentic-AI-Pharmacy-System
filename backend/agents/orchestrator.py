@@ -603,11 +603,23 @@ class OrchestratorAgent(BaseAgent):
         
         # Scenario A: Pending single order (from text conversation)
         if context.pending_order:
-            # Add to cart first
             pending = context.pending_order
-            medicine_info = pending.get("medicine", {})
-            if context.customer_id and medicine_info:
-                add_to_cart(context.customer_id, medicine_info, pending.get("quantity", 1))
+            
+            # pending_order IS the order object directly (flat structure)
+            # Fields: order_id, customer_id, medicine_id, medicine_name, quantity, unit_price, etc.
+            medicine_info = {
+                "medicine_id": pending.get("medicine_id", ""),
+                "name": pending.get("medicine_name", ""),
+                "unit_price": pending.get("unit_price", 0),
+                "dosage_form": pending.get("dosage_form", ""),
+                "prescription_required": str(pending.get("prescription_verified", True)).lower() == "false"
+            }
+            quantity = pending.get("quantity", 1)
+            
+            print(f"[ORCH] Confirming order, adding to cart: {medicine_info['name']} x{quantity}")
+            
+            if context.customer_id and medicine_info.get("medicine_id"):
+                add_to_cart(context.customer_id, medicine_info, quantity)
             
             exec_result = await self.agents["ExecutorAgent"].process(
                 input_data={"action": "confirm_order"},
@@ -826,7 +838,11 @@ class OrchestratorAgent(BaseAgent):
     def _get_or_create_context(self, session_id: str, customer_id: Optional[str]) -> AgentContext:
         """Get existing session or create new one."""
         if session_id in self.sessions:
-            return self.sessions[session_id]
+            context = self.sessions[session_id]
+            # Update customer_id if provided and context doesn't have it (or to be safe, always update if match)
+            if customer_id and context.customer_id != customer_id:
+                context.customer_id = customer_id
+            return context
         
         context = AgentContext(customer_id=customer_id, session_id=session_id)
         

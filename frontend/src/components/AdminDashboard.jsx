@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useLanguage } from '../LanguageContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ADMIN DASHBOARD - Administrative overview panel
-// Uses global language context for translations
+// ADMIN DASHBOARD - Administrative overview panel with enhanced patient view
+// Features: Patient search/filter, profile modal, conditions/allergies display
 // ═══════════════════════════════════════════════════════════════════════════
 
 function AdminDashboard({ systemStatus }) {
@@ -13,6 +13,12 @@ function AdminDashboard({ systemStatus }) {
     const [orders, setOrders] = useState([])
     const [traces, setTraces] = useState([])
     const [customers, setCustomers] = useState([])
+
+    // Patient management state
+    const [selectedPatient, setSelectedPatient] = useState(null)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [filterCondition, setFilterCondition] = useState('')
+    const [showPatientModal, setShowPatientModal] = useState(false)
 
     useEffect(() => {
         fetchDashboardData()
@@ -46,6 +52,43 @@ function AdminDashboard({ systemStatus }) {
 
     const lowStockItems = inventory.filter(i => i.low_stock)
     const prescriptionMeds = inventory.filter(i => i.prescription_required === 'true')
+
+    // Get unique chronic conditions for filter dropdown
+    const allConditions = [...new Set(
+        customers
+            .map(c => c.chronic_conditions || '')
+            .flatMap(c => c.split(';').map(s => s.trim()))
+            .filter(c => c && c !== 'None')
+    )]
+
+    // Filter customers based on search and condition filter
+    const filteredCustomers = customers.filter(customer => {
+        const matchesSearch = searchQuery === '' ||
+            customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            customer.customer_id?.toLowerCase().includes(searchQuery.toLowerCase())
+
+        const matchesCondition = filterCondition === '' ||
+            (customer.chronic_conditions || '').toLowerCase().includes(filterCondition.toLowerCase())
+
+        return matchesSearch && matchesCondition
+    })
+
+    const openPatientModal = (patient) => {
+        setSelectedPatient(patient)
+        setShowPatientModal(true)
+    }
+
+    const closePatientModal = () => {
+        setShowPatientModal(false)
+        setSelectedPatient(null)
+    }
+
+    // Format conditions/allergies for display
+    const parseListField = (field) => {
+        if (!field || field === 'None') return []
+        return field.split(';').map(s => s.trim()).filter(s => s)
+    }
 
     return (
         <div className="admin-dashboard">
@@ -91,6 +134,99 @@ function AdminDashboard({ systemStatus }) {
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                             No urgent refills at this time
                         </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Enhanced Patients Section */}
+            <div className="dashboard-card" style={{ gridColumn: 'span 3' }}>
+                <div className="patients-header">
+                    <h2><span className="card-icon">👥</span> Patients</h2>
+                    <div className="patients-stats">
+                        <span className="stat-badge">{customers.length} Total</span>
+                        <span className="stat-badge highlight">{filteredCustomers.length} Showing</span>
+                    </div>
+                </div>
+
+                {/* Search and Filter Controls */}
+                <div className="patients-controls">
+                    <div className="search-box">
+                        <span className="search-icon">🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Search by name, email, or ID..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="search-input"
+                        />
+                    </div>
+                    <select
+                        value={filterCondition}
+                        onChange={(e) => setFilterCondition(e.target.value)}
+                        className="filter-select"
+                    >
+                        <option value="">All Conditions</option>
+                        {allConditions.map((condition, idx) => (
+                            <option key={idx} value={condition}>{condition}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Patients Table */}
+                <div className="patients-table-wrapper">
+                    <table className="patients-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Chronic Conditions</th>
+                                <th>Allergies</th>
+                                <th>Registered</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredCustomers.map((customer, idx) => (
+                                <tr key={idx} onClick={() => openPatientModal(customer)}>
+                                    <td className="patient-id">{customer.customer_id}</td>
+                                    <td className="patient-name">{customer.name}</td>
+                                    <td className="patient-email">{customer.email}</td>
+                                    <td>
+                                        <div className="condition-tags">
+                                            {parseListField(customer.chronic_conditions).slice(0, 2).map((condition, i) => (
+                                                <span key={i} className="condition-tag">{condition}</span>
+                                            ))}
+                                            {parseListField(customer.chronic_conditions).length > 2 && (
+                                                <span className="condition-tag more">+{parseListField(customer.chronic_conditions).length - 2}</span>
+                                            )}
+                                            {parseListField(customer.chronic_conditions).length === 0 && (
+                                                <span className="no-data">None</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className="allergy-tags">
+                                            {parseListField(customer.allergies).map((allergy, i) => (
+                                                <span key={i} className="allergy-tag">{allergy}</span>
+                                            ))}
+                                            {parseListField(customer.allergies).length === 0 && (
+                                                <span className="no-data">None</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="patient-date">{customer.registered_date}</td>
+                                    <td>
+                                        <button className="view-profile-btn" onClick={(e) => { e.stopPropagation(); openPatientModal(customer) }}>
+                                            View
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {filteredCustomers.length === 0 && (
+                        <div className="no-results">No patients match your search criteria</div>
                     )}
                 </div>
             </div>
@@ -161,25 +297,6 @@ function AdminDashboard({ systemStatus }) {
                 </div>
             </div>
 
-            {/* Customers */}
-            <div className="dashboard-card">
-                <h2><span className="card-icon">👥</span> Customers</h2>
-                <div className="metric-value">{customers.length}</div>
-                <div className="metric-label">Registered patients</div>
-
-                <div className="inventory-list" style={{ marginTop: '1rem', maxHeight: '150px', overflow: 'auto' }}>
-                    {customers.slice(0, 5).map((cust, idx) => (
-                        <div key={idx} className="inventory-item">
-                            <div>
-                                <div className="inventory-name">{cust.name}</div>
-                                <div className="inventory-category">{cust.chronic_conditions || 'No conditions'}</div>
-                            </div>
-                            <div className="inventory-quantity">{cust.language?.toUpperCase()}</div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
             {/* Observability */}
             <div className="dashboard-card">
                 <h2><span className="card-icon">🔍</span> Observability (Traces)</h2>
@@ -222,6 +339,81 @@ function AdminDashboard({ systemStatus }) {
                     </a>
                 )}
             </div>
+
+            {/* Patient Detail Modal */}
+            {showPatientModal && selectedPatient && (
+                <div className="modal-overlay" onClick={closePatientModal}>
+                    <div className="patient-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Patient Profile</h2>
+                            <button className="modal-close-btn" onClick={closePatientModal}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="patient-profile-header">
+                                <div className="patient-avatar">
+                                    {selectedPatient.name?.charAt(0) || '?'}
+                                </div>
+                                <div className="patient-main-info">
+                                    <h3>{selectedPatient.name}</h3>
+                                    <p className="patient-id-display">{selectedPatient.customer_id}</p>
+                                </div>
+                            </div>
+
+                            <div className="patient-details-grid">
+                                <div className="detail-item">
+                                    <span className="detail-label">📧 Email</span>
+                                    <span className="detail-value">{selectedPatient.email}</span>
+                                </div>
+                                <div className="detail-item">
+                                    <span className="detail-label">📱 Phone</span>
+                                    <span className="detail-value">{selectedPatient.phone}</span>
+                                </div>
+                                <div className="detail-item">
+                                    <span className="detail-label">🎂 Date of Birth</span>
+                                    <span className="detail-value">{selectedPatient.date_of_birth}</span>
+                                </div>
+                                <div className="detail-item">
+                                    <span className="detail-label">🌐 Language</span>
+                                    <span className="detail-value">{selectedPatient.language?.toUpperCase() || 'EN'}</span>
+                                </div>
+                                <div className="detail-item full-width">
+                                    <span className="detail-label">📍 Address</span>
+                                    <span className="detail-value">{selectedPatient.address}</span>
+                                </div>
+                                <div className="detail-item">
+                                    <span className="detail-label">📅 Registered</span>
+                                    <span className="detail-value">{selectedPatient.registered_date}</span>
+                                </div>
+                            </div>
+
+                            <div className="patient-health-section">
+                                <div className="health-card conditions">
+                                    <h4>🩺 Chronic Conditions</h4>
+                                    <div className="health-tags">
+                                        {parseListField(selectedPatient.chronic_conditions).map((condition, i) => (
+                                            <span key={i} className="condition-tag large">{condition}</span>
+                                        ))}
+                                        {parseListField(selectedPatient.chronic_conditions).length === 0 && (
+                                            <span className="no-health-data">No chronic conditions reported</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="health-card allergies">
+                                    <h4>⚠️ Allergies</h4>
+                                    <div className="health-tags">
+                                        {parseListField(selectedPatient.allergies).map((allergy, i) => (
+                                            <span key={i} className="allergy-tag large">{allergy}</span>
+                                        ))}
+                                        {parseListField(selectedPatient.allergies).length === 0 && (
+                                            <span className="no-health-data">No allergies reported</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

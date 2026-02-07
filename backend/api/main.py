@@ -20,6 +20,11 @@ from agents.safety import safety_agent
 from agents.registration import registration_agent
 from services.langfuse_client import tracer
 from services.llm_client import llm_client
+from auth import (
+    LoginRequest, PatientRegisterRequest, Token, TokenData,
+    authenticate_user, register_patient, create_access_token,
+    decode_access_token, get_current_user_info
+)
 import uuid
 
 app = FastAPI(
@@ -61,6 +66,7 @@ class ChatResponse(BaseModel):
 class OrderConfirmRequest(BaseModel):
     session_id: str
     confirmed: bool
+    customer_id: Optional[str] = None
 
 
 class RegistrationStartRequest(BaseModel):
@@ -79,10 +85,99 @@ class RegistrationStepRequest(BaseModel):
 async def startup():
     ollama_available = await llm_client.check_ollama_available()
     if ollama_available:
-        print("✅ Ollama connected - llama3.2-vision ready")
+        print("[OK] Ollama connected - llama3.2-vision ready")
     else:
-        print("⚠️ Ollama not detected. Run: ollama serve")
-    print("✅ Agentic Pharmacy System API ready (NO API KEYS NEEDED)")
+        print("[!] Ollama not detected. Run: ollama serve")
+    print("[OK] Agentic Pharmacy System API ready (NO API KEYS NEEDED)")
+
+
+# ============ Authentication ============
+
+@app.post("/api/v1/auth/login")
+async def login(request: LoginRequest):
+    """Authenticate user and return JWT token."""
+    user = authenticate_user(request.email, request.password)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+    
+    access_token = create_access_token(
+        data={
+            "sub": user['email'],
+            "role": user['role'],
+            "customer_id": user.get('customer_id', '')
+        }
+    )
+    
+    return {
+        "success": True,
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user['id'],
+            "email": user['email'],
+            "role": user['role'],
+            "customer_id": user.get('customer_id') or None
+        }
+    }
+
+
+@app.post("/api/v1/auth/register")
+async def register(request: PatientRegisterRequest):
+    """Register a new patient."""
+    try:
+        result = register_patient(request)
+        
+        # Auto-login after registration
+        access_token = create_access_token(
+            data={
+                "sub": result['email'],
+                "role": result['role'],
+                "customer_id": result['customer_id']
+            }
+        )
+        
+        return {
+            "success": True,
+            "message": "Registration successful",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/auth/me")
+async def get_current_user(authorization: Optional[str] = None):
+    """Get current authenticated user info."""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Extract token from "Bearer <token>"
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    
+    token_data = decode_access_token(token)
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    user_info = get_current_user_info(token_data)
+    if not user_info:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "success": True,
+        "user": user_info.dict()
+    }
 
 
 # ============ Chat Endpoints ============
@@ -118,13 +213,14 @@ async def confirm_order(request: OrderConfirmRequest):
     """Confirm or cancel a pending order."""
     try:
         if request.confirmed:
-            message = "yes, confirm the order"
+            message = "yes"
         else:
             message = "no, cancel it"
         
         result = await orchestrator_agent.handle_message(
             message=message,
-            session_id=request.session_id
+            session_id=request.session_id,
+            customer_id=request.customer_id
         )
         
         return ChatResponse(

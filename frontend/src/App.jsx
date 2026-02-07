@@ -1,34 +1,40 @@
 import { useState, useEffect } from 'react'
 import { LanguageProvider, useLanguage } from './LanguageContext'
+import { AuthProvider, useAuth } from './AuthContext'
 import Chat from './components/Chat'
 import AdminDashboard from './components/AdminDashboard'
 import Catalog from './components/Catalog'
 import Cart from './components/Cart'
+import LoginPage from './components/LoginPage'
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIN APP WITH SIDE NAVIGATION & GLOBAL LANGUAGE SUPPORT
+// MAIN APP WITH ROLE-BASED ACCESS CONTROL
 // Patient Mode: Chat | Catalog | Cart (side tabs)
 // Admin Mode: Separate dashboard
-// All UI text managed via centralized translation system
+// Authentication required for all views
 // ═══════════════════════════════════════════════════════════════════════════
 
 function AppContent() {
     const { language, setLanguage, t, langCode, LANGUAGES } = useLanguage()
+    const { isAuthenticated, isAdmin, isPatient, user, logout, customerId } = useAuth()
 
     // Navigation state
-    const [mode, setMode] = useState('patient') // 'patient' or 'admin'
     const [activeView, setActiveView] = useState('chat') // 'chat', 'catalog', 'cart'
     const [systemStatus, setSystemStatus] = useState(null)
 
-    // Shared state
-    const [customerId, setCustomerId] = useState('CUST001')
+    // Cart state
     const [cartItems, setCartItems] = useState([])
     const [cartNotification, setCartNotification] = useState(false)
 
+    // Use customer ID from auth, or fall back to first option for demo
+    const effectiveCustomerId = customerId || 'CUST001'
+
     useEffect(() => {
-        fetchSystemStatus()
-        loadCart()
-    }, [customerId])
+        if (isAuthenticated) {
+            fetchSystemStatus()
+            loadCart()
+        }
+    }, [isAuthenticated, effectiveCustomerId])
 
     const fetchSystemStatus = async () => {
         try {
@@ -42,55 +48,43 @@ function AppContent() {
 
     const loadCart = async () => {
         try {
-            const response = await fetch(`/api/v1/cart/${customerId}`)
+            const response = await fetch(`/api/v1/cart/${effectiveCustomerId}`)
             const data = await response.json()
             if (data.items) {
                 setCartItems(data.items)
             }
         } catch (error) {
-            // Cart API might not exist yet, use local state
             console.log('Cart API not available, using local state')
         }
     }
 
     const handleAddToCart = async (medicine) => {
-        // Check if already in cart
         const existing = cartItems.find(item => item.medicine_id === medicine.medicine_id)
-        if (existing) {
-            return
-        }
+        if (existing) return
 
-        const newItem = {
-            ...medicine,
-            quantity: 1
-        }
-
-        // Optimistic update
+        const newItem = { ...medicine, quantity: 1 }
         setCartItems(prev => [...prev, newItem])
         setCartNotification(true)
         setTimeout(() => setCartNotification(false), 2000)
 
-        // Try to sync with backend
         try {
             await fetch('/api/v1/cart/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    customer_id: customerId,
+                    customer_id: effectiveCustomerId,
                     medicine_id: medicine.medicine_id,
                     quantity: 1
                 })
             })
         } catch (error) {
-            console.log('Cart sync pending - backend API not yet available')
+            console.log('Cart sync pending')
         }
     }
 
     const handleUpdateQuantity = (medicineId, newQuantity) => {
         setCartItems(prev => prev.map(item =>
-            item.medicine_id === medicineId
-                ? { ...item, quantity: newQuantity }
-                : item
+            item.medicine_id === medicineId ? { ...item, quantity: newQuantity } : item
         ))
     }
 
@@ -104,7 +98,7 @@ function AppContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    customer_id: customerId,
+                    customer_id: effectiveCustomerId,
                     items: cartItems,
                     language: langCode
                 })
@@ -123,14 +117,12 @@ function AppContent() {
         }
     }
 
-    const customerOptions = [
-        { id: 'CUST001', name: 'Rajesh Kumar' },
-        { id: 'CUST003', name: 'Hans Mueller' },
-        { id: 'CUST005', name: 'Mohammed Ali' },
-        { id: 'CUST007', name: 'Ramesh Iyer' }
-    ]
+    // Show login page if not authenticated
+    if (!isAuthenticated) {
+        return <LoginPage />
+    }
 
-    // Side navigation items for patient mode - translated labels
+    // Side navigation items for patient mode
     const sideNavItems = [
         { id: 'chat', icon: '💬', label: t('nav.chat') },
         { id: 'catalog', icon: '🛒', label: t('nav.catalog') },
@@ -146,23 +138,16 @@ function AppContent() {
                     <span className="logo-text">{t('app.title')}</span>
                 </div>
 
-                {/* Mode Toggle */}
-                <nav className="nav-tabs mode-toggle">
-                    <button
-                        className={`nav-tab ${mode === 'patient' ? 'active' : ''}`}
-                        onClick={() => { setMode('patient'); setActiveView('chat') }}
-                    >
-                        {t('app.patient')}
-                    </button>
-                    <button
-                        className={`nav-tab ${mode === 'admin' ? 'active' : ''}`}
-                        onClick={() => setMode('admin')}
-                    >
-                        {t('app.admin')}
-                    </button>
-                </nav>
+                {/* User Info Badge */}
+                <div className="user-badge">
+                    <span className="user-role-icon">{isAdmin ? '🔐' : '👤'}</span>
+                    <span className="user-info">
+                        <span className="user-name">{user?.name || user?.email}</span>
+                        <span className="user-role">{isAdmin ? 'Administrator' : 'Patient'}</span>
+                    </span>
+                </div>
 
-                {/* Language & Customer Selector */}
+                {/* Header Controls */}
                 <div className="header-controls">
                     <div className="language-toggle">
                         {Object.entries(LANGUAGES).map(([key, lang]) => (
@@ -176,29 +161,22 @@ function AppContent() {
                         ))}
                     </div>
 
-                    {mode === 'patient' && (
-                        <select
-                            value={customerId}
-                            onChange={(e) => setCustomerId(e.target.value)}
-                            className="customer-select"
-                        >
-                            {customerOptions.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
-                    )}
-
                     <div className="status-indicator">
                         <span className={`status-dot ${systemStatus?.ollama?.available ? 'active' : ''}`}></span>
                         <span>{systemStatus?.ollama?.available ? t('app.online') : t('app.offline')}</span>
                     </div>
+
+                    <button className="logout-btn" onClick={logout}>
+                        <span className="logout-icon">🚪</span>
+                        Logout
+                    </button>
                 </div>
             </header>
 
             {/* Main Layout */}
             <div className="app-layout">
                 {/* Side Navigation (Patient Mode Only) */}
-                {mode === 'patient' && (
+                {isPatient && (
                     <nav className="side-nav">
                         {sideNavItems.map(item => (
                             <button
@@ -217,23 +195,16 @@ function AppContent() {
                 )}
 
                 {/* Main Content */}
-                <main className={`main-content ${mode === 'admin' ? 'full-width' : ''}`}>
-                    {mode === 'admin' ? (
+                <main className={`main-content ${isAdmin ? 'full-width' : ''}`}>
+                    {isAdmin ? (
                         <AdminDashboard systemStatus={systemStatus} />
                     ) : (
                         <>
-                            {/* Use CSS display to retain state instead of conditional rendering */}
                             <div style={{ display: activeView === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'row', gap: '1.5rem' }}>
-                                <Chat
-                                    customerId={customerId}
-                                    onCartUpdate={loadCart}
-                                />
+                                <Chat customerId={effectiveCustomerId} onCartUpdate={loadCart} />
                             </div>
                             <div style={{ display: activeView === 'catalog' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
-                                <Catalog
-                                    onAddToCart={handleAddToCart}
-                                    cartItems={cartItems}
-                                />
+                                <Catalog onAddToCart={handleAddToCart} cartItems={cartItems} />
                             </div>
                             <div style={{ display: activeView === 'cart' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
                                 <Cart
@@ -241,7 +212,7 @@ function AppContent() {
                                     onUpdateQuantity={handleUpdateQuantity}
                                     onRemoveItem={handleRemoveItem}
                                     onCheckout={handleCheckout}
-                                    customerId={customerId}
+                                    customerId={effectiveCustomerId}
                                 />
                             </div>
                         </>
@@ -252,11 +223,13 @@ function AppContent() {
     )
 }
 
-// Wrap the app with LanguageProvider for global language state
+// Wrap the app with providers
 function App() {
     return (
         <LanguageProvider>
-            <AppContent />
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
         </LanguageProvider>
     )
 }

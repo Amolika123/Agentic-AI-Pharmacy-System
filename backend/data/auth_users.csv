@@ -1,0 +1,12 @@
+id,email,password_hash,role,customer_id,created_at
+admin_001,admin@pharmacy.com,$5$rounds=535000$9sp17C/WsvZrOx21$hT1o/loq4dm006z1ekXf0aE9L/kYxg/E5.xZ.J7qsW.,admin,,2026-02-07T08:00:00
+patient_CUST001,rajesh.kumar@email.com,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST001,2026-02-07T08:00:00
+patient_CUST002,priya.sharma@email.com,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST002,2026-02-07T08:00:00
+patient_CUST003,hans.mueller@email.de,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST003,2026-02-07T08:00:00
+patient_CUST004,anita.patel@email.com,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST004,2026-02-07T08:00:00
+patient_CUST005,mohammed.ali@email.com,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST005,2026-02-07T08:00:00
+patient_CUST006,sunita.verma@email.com,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST006,2026-02-07T08:00:00
+patient_CUST007,ramesh.iyer@email.com,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST007,2026-02-07T08:00:00
+patient_CUST008,fatima.khan@email.com,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST008,2026-02-07T08:00:00
+patient_CUST009,vikram.singh@email.com,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST009,2026-02-07T08:00:00
+patient_CUST010,meera.nair@email.com,$5$rounds=535000$6T49BcltCRuRF.w7$YJ8qum6lLh6AYIOPwJJK2WCKsnriIx9iyTPY9F.F9H/,patient,CUST010,2026-02-07T08:00:00

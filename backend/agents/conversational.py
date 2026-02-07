@@ -115,9 +115,65 @@ class ConversationalAgent(BaseAgent):
             language_result = await self.llm.detect_language(user_message)
             context.language = language_result.get("language", "en")
             
-            # Step 2: Classify intent via LLM
-            intent_result = await self.llm.classify_intent(user_message, self.supported_intents)
-            intent = intent_result.get("intent", "general_query")
+            # ═══════════════════════════════════════════════════════════════════
+            # PRIORITY: Keyword-based intent detection (works even if LLM fails)
+            # This ensures reliable intent detection for common pharmacy requests
+            # ═══════════════════════════════════════════════════════════════════
+            msg_lower = user_message.lower().strip()
+            intent = None
+            
+            # Order medicine keywords (multi-language)
+            ORDER_KEYWORDS = [
+                # English
+                "i need", "i want", "give me", "order", "buy", "get me", "can i have",
+                "please give", "i would like", "i'd like", "need to order", "want to order",
+                # Hindi
+                "chahiye", "mujhe", "order karo", "de do", "dena",
+                # German  
+                "ich brauche", "ich möchte", "bestellen", "gib mir"
+            ]
+            
+            # Check availability keywords
+            AVAILABILITY_KEYWORDS = [
+                "do you have", "is available", "in stock", "availability", "check if",
+                "hai kya", "milega", "verfügbar", "haben sie"
+            ]
+            
+            # Symptom/advice keywords
+            SYMPTOM_KEYWORDS = [
+                "i have", "suffering from", "feeling", "pain", "ache", "fever",
+                "headache", "cold", "cough", "stomach", "suggest", "recommend",
+                "dard", "bukhar", "sardi", "schmerz", "fieber"
+            ]
+            
+            # Detect intent from keywords
+            for kw in ORDER_KEYWORDS:
+                if kw in msg_lower:
+                    intent = "order_medicine"
+                    print(f"[CONV] Keyword detected: '{kw}' → order_medicine")
+                    break
+            
+            if not intent:
+                for kw in AVAILABILITY_KEYWORDS:
+                    if kw in msg_lower:
+                        intent = "check_availability"
+                        print(f"[CONV] Keyword detected: '{kw}' → check_availability")
+                        break
+            
+            if not intent:
+                for kw in SYMPTOM_KEYWORDS:
+                    if kw in msg_lower:
+                        intent = "report_symptoms"
+                        print(f"[CONV] Keyword detected: '{kw}' → report_symptoms")
+                        break
+            
+            # Fallback to LLM only if no keyword match
+            if not intent:
+                # Step 2: Classify intent via LLM
+                intent_result = await self.llm.classify_intent(user_message, self.supported_intents)
+                intent = intent_result.get("intent", "general_query")
+            else:
+                intent_result = {"intent": intent, "confidence": 0.95, "method": "keyword"}
             
             # Correction: Map ask_advice to report_symptoms if generic medical advice
             if intent == "ask_advice" and "symptoms" in user_message.lower():
@@ -185,6 +241,88 @@ class ConversationalAgent(BaseAgent):
     
     async def _extract_pharmacy_entities(self, text: str, language: str) -> Dict[str, Any]:
         """Extract medicine names, dosages, quantities from natural text."""
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # PRIORITY: Pattern-based extraction (works even if LLM fails)
+        # Match against known medicines from database first
+        # ═══════════════════════════════════════════════════════════════════
+        import csv
+        from pathlib import Path
+        import re
+        
+        # Load known medicines
+        medicines_path = Path(__file__).parent.parent / "data" / "medicines.csv"
+        known_medicines = []
+        if medicines_path.exists():
+            with open(medicines_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    known_medicines.append(row.get("name", "").lower())
+        
+        # Try pattern matching first
+        text_lower = text.lower()
+        found_medicine = None
+        found_quantity = 1
+        found_dosage = None
+        
+        # Check if any known medicine is mentioned
+        for med_name in known_medicines:
+            if med_name and med_name in text_lower:
+                found_medicine = med_name.title()  # Capitalize properly
+                print(f"[CONV] Pattern match found medicine: {found_medicine}")
+                break
+        
+        # Common medicine name patterns (fuzzy matching)
+        COMMON_MEDICINES = {
+            "paracetamol": "Paracetamol", "crocin": "Paracetamol",
+            "ibuprofen": "Ibuprofen", "advil": "Ibuprofen", "brufen": "Ibuprofen",
+            "aspirin": "Aspirin", "disprin": "Aspirin",
+            "cetirizine": "Cetirizine", "zyrtec": "Cetirizine",
+            "omeprazole": "Omeprazole", "prilosec": "Omeprazole",
+            "metformin": "Metformin", "glucophage": "Metformin",
+            "amoxicillin": "Amoxicillin", "amoxil": "Amoxicillin",
+            "azithromycin": "Azithromycin", "zithromax": "Azithromycin",
+            "vitamin c": "Vitamin C", "vitamin d": "Vitamin D",
+            "cough syrup": "Cough Syrup", "cold medicine": "Cold Medicine"
+        }
+        
+        if not found_medicine:
+            for pattern, proper_name in COMMON_MEDICINES.items():
+                if pattern in text_lower:
+                    found_medicine = proper_name
+                    print(f"[CONV] Common pattern match: {pattern} → {proper_name}")
+                    break
+        
+        # Extract quantity (e.g., "2 strips", "3 tablets", "1 bottle")
+        quantity_patterns = [
+            r'(\d+)\s*(strip|tablet|pill|bottle|box|pack|unit)s?',
+            r'(\d+)\s+of\s+',
+            r'give\s+(?:me\s+)?(\d+)',
+        ]
+        for pattern in quantity_patterns:
+            match = re.search(pattern, text_lower)
+            if match:
+                found_quantity = int(match.group(1))
+                break
+        
+        # Extract dosage (e.g., "500mg", "10 mg")
+        dosage_match = re.search(r'(\d+)\s*(mg|ml|g)\b', text_lower)
+        if dosage_match:
+            found_dosage = f"{dosage_match.group(1)}{dosage_match.group(2)}"
+        
+        # If pattern matching found medicine, return without LLM
+        if found_medicine:
+            return {
+                "medicine_name": found_medicine,
+                "quantity": found_quantity,
+                "dosage": found_dosage,
+                "frequency": None,
+                "duration": None,
+                "symptoms": None,
+                "extraction_method": "pattern"
+            }
+        
+        # Fallback to LLM for complex cases
         system_prompt = """You are a pharmacy assistant extracting order details from customer messages.
 Extract the following entities from the user's message:
 - medicine_name: The name of the medicine/drug mentioned (generic or brand name)
