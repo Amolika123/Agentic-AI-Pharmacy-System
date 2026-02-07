@@ -6,3 +6,5 @@ pydantic>=2.5.0
 langfuse>=2.50.0
 python-dotenv>=1.0.0
 easyocr>=1.7.0
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0

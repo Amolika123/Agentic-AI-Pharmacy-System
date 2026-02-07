@@ -5,13 +5,8 @@ import { useLanguage } from '../LanguageContext'
 // CHAT COMPONENT - Uses global language context for translations
 // ═══════════════════════════════════════════════════════════════════════════
 
-function Chat({ customerId: propCustomerId, onCartUpdate }) {
+function Chat({ customerId, onCartUpdate }) {
     const { language, setLanguage, t, langCode, LANGUAGES } = useLanguage()
-
-    // Use props if provided, otherwise use internal state
-    const [internalCustomerId, setInternalCustomerId] = useState('CUST001')
-
-    const customerId = propCustomerId || internalCustomerId
 
     const [messages, setMessages] = useState([
         {
@@ -227,7 +222,8 @@ function Chat({ customerId: propCustomerId, onCartUpdate }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     session_id: pendingConfirmation.sessionId,
-                    confirmed
+                    confirmed,
+                    customer_id: customerId
                 })
             })
 
@@ -333,12 +329,7 @@ function Chat({ customerId: propCustomerId, onCartUpdate }) {
     // Dynamic quick actions based on selected language
     const quickActions = t('chat.quickActions') || []
 
-    const customerOptions = [
-        { id: 'CUST001', name: 'Rajesh Kumar' },
-        { id: 'CUST003', name: 'Hans Mueller' },
-        { id: 'CUST005', name: 'Mohammed Ali' },
-        { id: 'CUST007', name: 'Ramesh Iyer' }
-    ]
+    // Customer ID now comes from auth context via props - no selector needed
 
     return (
         <>
@@ -361,22 +352,7 @@ function Chat({ customerId: propCustomerId, onCartUpdate }) {
                         ))}
                     </div>
 
-                    <select
-                        value={customerId}
-                        onChange={(e) => setCustomerId(e.target.value)}
-                        style={{
-                            background: 'var(--bg-glass)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '0.25rem 0.5rem',
-                            color: 'var(--text-primary)',
-                            fontSize: '0.75rem'
-                        }}
-                    >
-                        {customerOptions.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
+                    {/* Customer ID from auth - no manual selection */}
                 </div>
 
                 <div className="chat-messages">

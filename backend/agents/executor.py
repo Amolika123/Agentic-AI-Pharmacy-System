@@ -104,9 +104,8 @@ class ExecutorAgent(BaseAgent):
             "prescription_verified": medicine.get("prescription_required", "false") == "false"
         }
         
-        # Add to cart immediately so user can see items in Cart tab
-        if context.customer_id and medicine.get("medicine_id"):
-            self._add_to_cart(context.customer_id, medicine, quantity)
+        # NOTE: Do NOT add to cart here - wait for user confirmation
+        # Cart addition happens in _confirm_order after user says "yes"
         
         # Store in context for confirmation
         context.pending_order = order
@@ -131,9 +130,7 @@ class ExecutorAgent(BaseAgent):
 📦 Quantity: {quantity}
 💰 Total: ₹{order['total']:.2f}
 
-🛒 **Items added to your Cart!**
-
-Would you like to confirm this order?""",
+**Would you like to confirm this order?** (Reply 'yes' to confirm)""",
             requires_action=True,
             action_type="confirm_order"
         )
