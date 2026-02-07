@@ -19,6 +19,8 @@ class VisionAgent(BaseAgent):
             name="VisionAgent",
             description="Prescription image analyzer using multimodal vision"
         )
+        # OCR cache to prevent re-processing same images (MODEL_B optimization)
+        self._ocr_cache = {}  # {image_hash: AgentResponse}
     
     async def process(
         self,
@@ -39,6 +41,27 @@ class VisionAgent(BaseAgent):
                     data={"error": "no_image"},
                     message="Please upload a prescription image for analysis."
                 )
+            
+            # ═══════════════════════════════════════════════════════════
+            # OCR CACHE CHECK: Skip expensive OCR if image already processed
+            # MODEL_B optimization: Never re-run OCR for same image
+            # ═══════════════════════════════════════════════════════════
+            import hashlib
+            image_to_hash = image_base64 or image_data
+            image_hash = hashlib.md5(image_to_hash.encode()[:10000]).hexdigest()  # Use first 10KB for speed
+            
+            if image_hash in self._ocr_cache:
+                print(f"[VISION] Cache hit for image hash: {image_hash[:8]}...")
+                cached_response = self._ocr_cache[image_hash]
+                # Update context with cached extraction
+                if cached_response.data.get("medicines"):
+                    context.set_entity("extracted_prescription", {
+                        "medicines": cached_response.data["medicines"],
+                        "confidence": cached_response.data.get("confidence", 0.8)
+                    })
+                return cached_response
+            
+            print(f"[VISION] Processing new image, hash: {image_hash[:8]}...")
             
             # Analyze prescription using vision LLM
             extracted = await self._analyze_prescription_image(image_base64 or image_data)
@@ -85,7 +108,8 @@ class VisionAgent(BaseAgent):
             # Store extracted medicines in context for confirmation
             context.set_entity("extracted_prescription", extracted)
             
-            return AgentResponse(
+            # Cache the successful response before returning
+            response = AgentResponse(
                 success=True,
                 data={
                     "status": "prescription_analyzed",
@@ -101,6 +125,8 @@ class VisionAgent(BaseAgent):
                 requires_action=True,
                 action_type="confirm_prescription"
             )
+            self._ocr_cache[image_hash] = response
+            return response
             
         except Exception as e:
             # DEBUG: Log the error to a file
