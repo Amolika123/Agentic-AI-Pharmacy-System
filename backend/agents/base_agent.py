@@ -31,6 +31,7 @@ class AgentContext:
     requires_prescription: List[str] = field(default_factory=list)
     order_state: OrderState = OrderState.NONE
     awaiting_cancel_confirmation: bool = False  # Two-step cancellation flag
+    last_action: Optional[str] = None  # Track last system action for confirmation context
     
     def add_message(self, role: str, content: str):
         self.conversation_history.append({"role": role, "content": content})
@@ -49,7 +50,8 @@ class AgentContext:
             "language": self.language,
             "extracted_entities": self.extracted_entities,
             "policy_results": self.policy_results,
-            "order_state": self.order_state.value
+            "order_state": self.order_state.value,
+            "last_action": self.last_action
         }
 
 
