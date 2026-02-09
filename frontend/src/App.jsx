@@ -183,6 +183,7 @@ function AppContent() {
                                 key={item.id}
                                 className={`side-nav-item ${activeView === item.id ? 'active' : ''} ${item.id === 'cart' && cartNotification ? 'notification' : ''}`}
                                 onClick={() => setActiveView(item.id)}
+                                title={item.label}
                             >
                                 <span className="side-nav-icon">{item.icon}</span>
                                 <span className="side-nav-label">{item.label}</span>
@@ -195,12 +196,12 @@ function AppContent() {
                 )}
 
                 {/* Main Content */}
-                <main className={`main-content ${isAdmin ? 'full-width' : ''}`}>
+                <main className="main-content">
                     {isAdmin ? (
                         <AdminDashboard systemStatus={systemStatus} />
                     ) : (
                         <>
-                            <div style={{ display: activeView === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'row', gap: '1.5rem' }}>
+                            <div style={{ display: activeView === 'chat' ? 'flex' : 'none', flex: 1 }}>
                                 <Chat customerId={effectiveCustomerId} onCartUpdate={loadCart} />
                             </div>
                             <div style={{ display: activeView === 'catalog' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>

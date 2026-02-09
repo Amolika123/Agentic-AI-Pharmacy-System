@@ -1,5 +1,5 @@
 medicine_id,name,generic_name,category,stock_quantity,unit,unit_price,prescription_required,manufacturer,dosage_form,strength,reorder_level,active
-MED001,Paracetamol 500mg,Paracetamol,Pain Relief,477,tablets,2.50,false,GSK,Tablet,500mg,100,true
+MED001,Paracetamol 500mg,Paracetamol,Pain Relief,476,tablets,2.50,false,GSK,Tablet,500mg,100,true
 MED002,Ibuprofen 400mg,Ibuprofen,Pain Relief,347,tablets,3.00,false,Cipla,Tablet,400mg,75,true
 MED003,Amoxicillin 500mg,Amoxicillin,Antibiotic,200,capsules,8.50,true,Sun Pharma,Capsule,500mg,50,true
 MED004,Azithromycin 250mg,Azithromycin,Antibiotic,150,tablets,12.00,true,Zydus,Tablet,250mg,40,true
