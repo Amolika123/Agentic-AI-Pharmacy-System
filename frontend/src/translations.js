@@ -169,6 +169,46 @@ export const translations = {
                 '🔔 Personalized refill reminders',
                 '📋 Prescription upload & analysis'
             ]
+        },
+
+        // Login Page
+        login: {
+            title: 'AI Pharmacy',
+            subtitle: 'Welcome back! Please login to continue',
+            registerSubtitle: 'Create your patient account',
+            email: 'Email',
+            emailPlaceholder: 'Enter your email',
+            password: 'Password',
+            passwordPlaceholder: 'Enter your password',
+            loginAsPatient: 'Login as Patient',
+            loginAsAdmin: 'Login as Admin',
+            noAccount: "Don't have an account?",
+            registerHere: 'Register here',
+            patient: 'Patient',
+            admin: 'Admin',
+            backToLogin: '← Back to Login',
+            patientRegistration: 'Patient Registration',
+            fullName: 'Full Name',
+            fullNamePlaceholder: 'Enter your full name',
+            phone: 'Phone Number',
+            phonePlaceholder: '+91-1234567890',
+            dob: 'Date of Birth',
+            address: 'Address',
+            addressPlaceholder: 'Enter your full address',
+            preferredLanguage: 'Preferred Language',
+            chronicConditions: 'Chronic Conditions',
+            chronicPlaceholder: 'e.g., Diabetes, Hypertension',
+            commaSeparated: 'Comma-separated list',
+            allergies: 'Allergies',
+            allergiesPlaceholder: 'e.g., Penicillin, Aspirin',
+            allergiesHint: 'Comma-separated list (important for drug safety checks)',
+            createAccount: 'Create Account',
+            haveAccount: 'Already have an account?',
+            loginHere: 'Login here',
+            footer: 'Secured by AI-powered healthcare technology',
+            confirmPassword: 'Confirm Password',
+            confirmPasswordPlaceholder: 'Confirm your password',
+            createPasswordPlaceholder: 'Create a password'
         }
     },
 
@@ -331,6 +371,46 @@ export const translations = {
                 '🔔 व्यक्तिगत रिफिल रिमाइंडर',
                 '📋 प्रिस्क्रिप्शन अपलोड'
             ]
+        },
+
+        // Login Page
+        login: {
+            title: 'AI फार्मेसी',
+            subtitle: 'वापस स्वागत है! कृपया लॉगिन करें',
+            registerSubtitle: 'अपना मरीज़ खाता बनाएं',
+            email: 'ईमेल',
+            emailPlaceholder: 'अपना ईमेल दर्ज करें',
+            password: 'पासवर्ड',
+            passwordPlaceholder: 'अपना पासवर्ड दर्ज करें',
+            loginAsPatient: 'मरीज़ के रूप में लॉगिन',
+            loginAsAdmin: 'एडमिन के रूप में लॉगिन',
+            noAccount: 'खाता नहीं है?',
+            registerHere: 'यहाँ पंजीकरण करें',
+            patient: 'मरीज़',
+            admin: 'एडमिन',
+            backToLogin: '← लॉगिन पर वापस',
+            patientRegistration: 'मरीज़ पंजीकरण',
+            fullName: 'पूरा नाम',
+            fullNamePlaceholder: 'अपना पूरा नाम दर्ज करें',
+            phone: 'फोन नंबर',
+            phonePlaceholder: '+91-1234567890',
+            dob: 'जन्म तिथि',
+            address: 'पता',
+            addressPlaceholder: 'अपना पूरा पता दर्ज करें',
+            preferredLanguage: 'पसंदीदा भाषा',
+            chronicConditions: 'पुरानी बीमारियाँ',
+            chronicPlaceholder: 'जैसे, मधुमेह, उच्च रक्तचाप',
+            commaSeparated: 'अल्पविराम से अलग सूची',
+            allergies: 'एलर्जी',
+            allergiesPlaceholder: 'जैसे, पेनिसिलिन, एस्पिरिन',
+            allergiesHint: 'अल्पविराम से अलग सूची (दवा सुरक्षा जांच के लिए महत्वपूर्ण)',
+            createAccount: 'खाता बनाएं',
+            haveAccount: 'पहले से खाता है?',
+            loginHere: 'यहाँ लॉगिन करें',
+            footer: 'AI-संचालित स्वास्थ्य तकनीक द्वारा सुरक्षित',
+            confirmPassword: 'पासवर्ड की पुष्टि करें',
+            confirmPasswordPlaceholder: 'अपने पासवर्ड की पुष्टि करें',
+            createPasswordPlaceholder: 'पासवर्ड बनाएं'
         }
     },
 
@@ -493,6 +573,46 @@ export const translations = {
                 '🔔 Personalisierte Nachfüllerinnerungen',
                 '📋 Rezept-Upload & Analyse'
             ]
+        },
+
+        // Login Page
+        login: {
+            title: 'KI-Apotheke',
+            subtitle: 'Willkommen zurück! Bitte melden Sie sich an',
+            registerSubtitle: 'Erstellen Sie Ihr Patientenkonto',
+            email: 'E-Mail',
+            emailPlaceholder: 'Geben Sie Ihre E-Mail ein',
+            password: 'Passwort',
+            passwordPlaceholder: 'Geben Sie Ihr Passwort ein',
+            loginAsPatient: 'Als Patient anmelden',
+            loginAsAdmin: 'Als Admin anmelden',
+            noAccount: 'Kein Konto?',
+            registerHere: 'Hier registrieren',
+            patient: 'Patient',
+            admin: 'Admin',
+            backToLogin: '← Zurück zur Anmeldung',
+            patientRegistration: 'Patientenregistrierung',
+            fullName: 'Vollständiger Name',
+            fullNamePlaceholder: 'Geben Sie Ihren vollständigen Namen ein',
+            phone: 'Telefonnummer',
+            phonePlaceholder: '+49-123456789',
+            dob: 'Geburtsdatum',
+            address: 'Adresse',
+            addressPlaceholder: 'Geben Sie Ihre vollständige Adresse ein',
+            preferredLanguage: 'Bevorzugte Sprache',
+            chronicConditions: 'Chronische Erkrankungen',
+            chronicPlaceholder: 'z.B., Diabetes, Bluthochdruck',
+            commaSeparated: 'Durch Komma getrennte Liste',
+            allergies: 'Allergien',
+            allergiesPlaceholder: 'z.B., Penicillin, Aspirin',
+            allergiesHint: 'Durch Komma getrennte Liste (wichtig für Arzneimittelsicherheit)',
+            createAccount: 'Konto erstellen',
+            haveAccount: 'Haben Sie bereits ein Konto?',
+            loginHere: 'Hier anmelden',
+            footer: 'Gesichert durch KI-gestützte Gesundheitstechnologie',
+            confirmPassword: 'Passwort bestätigen',
+            confirmPasswordPlaceholder: 'Bestätigen Sie Ihr Passwort',
+            createPasswordPlaceholder: 'Passwort erstellen'
         }
     }
 }

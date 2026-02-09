@@ -97,11 +97,11 @@ function LoginPage() {
     const renderLoginForm = () => (
         <form onSubmit={handleLogin} className="auth-form">
             <div className="form-group">
-                <label htmlFor="login-email">Email</label>
+                <label htmlFor="login-email">{t('login.email')}</label>
                 <input
                     id="login-email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder={t('login.emailPlaceholder')}
                     value={loginForm.email}
                     onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
                     className={formErrors.email ? 'error' : ''}
@@ -111,12 +111,12 @@ function LoginPage() {
             </div>
 
             <div className="form-group">
-                <label htmlFor="login-password">Password</label>
+                <label htmlFor="login-password">{t('login.password')}</label>
                 <div className="password-input-wrapper">
                     <input
                         id="login-password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Enter your password"
+                        placeholder={t('login.passwordPlaceholder')}
                         value={loginForm.password}
                         onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                         className={formErrors.password ? 'error' : ''}
@@ -142,15 +142,15 @@ function LoginPage() {
                 {isLoading ? (
                     <span className="loading-spinner"></span>
                 ) : (
-                    `Login as ${activeTab === 'admin' ? 'Admin' : 'Patient'}`
+                    activeTab === 'admin' ? t('login.loginAsAdmin') : t('login.loginAsPatient')
                 )}
             </button>
 
             {activeTab === 'patient' && (
                 <p className="auth-switch-text">
-                    Don't have an account?{' '}
+                    {t('login.noAccount')}{' '}
                     <button type="button" className="link-btn" onClick={() => { setShowRegister(true); setFormErrors({}) }}>
-                        Register here
+                        {t('login.registerHere')}
                     </button>
                 </p>
             )}
@@ -161,11 +161,11 @@ function LoginPage() {
         <form onSubmit={handleRegister} className="auth-form register-form">
             <div className="form-row">
                 <div className="form-group">
-                    <label htmlFor="reg-name">Full Name *</label>
+                    <label htmlFor="reg-name">{t('login.fullName')} *</label>
                     <input
                         id="reg-name"
                         type="text"
-                        placeholder="Enter your full name"
+                        placeholder={t('login.fullNamePlaceholder')}
                         value={registerForm.name}
                         onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
                         className={formErrors.name ? 'error' : ''}
@@ -174,11 +174,11 @@ function LoginPage() {
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="reg-email">Email *</label>
+                    <label htmlFor="reg-email">{t('login.email')} *</label>
                     <input
                         id="reg-email"
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder={t('login.emailPlaceholder')}
                         value={registerForm.email}
                         onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
                         className={formErrors.email ? 'error' : ''}
@@ -189,12 +189,12 @@ function LoginPage() {
 
             <div className="form-row">
                 <div className="form-group">
-                    <label htmlFor="reg-password">Password *</label>
+                    <label htmlFor="reg-password">{t('login.password')} *</label>
                     <div className="password-input-wrapper">
                         <input
                             id="reg-password"
                             type={showRegPassword ? 'text' : 'password'}
-                            placeholder="Create a password"
+                            placeholder={t('login.createPasswordPlaceholder')}
                             value={registerForm.password}
                             onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                             className={formErrors.password ? 'error' : ''}
@@ -212,12 +212,12 @@ function LoginPage() {
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="reg-confirm-password">Confirm Password *</label>
+                    <label htmlFor="reg-confirm-password">{t('login.confirmPassword')} *</label>
                     <div className="password-input-wrapper">
                         <input
                             id="reg-confirm-password"
                             type={showRegConfirmPassword ? 'text' : 'password'}
-                            placeholder="Confirm your password"
+                            placeholder={t('login.confirmPasswordPlaceholder')}
                             value={registerForm.confirmPassword}
                             onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
                             className={formErrors.confirmPassword ? 'error' : ''}
@@ -237,11 +237,11 @@ function LoginPage() {
 
             <div className="form-row">
                 <div className="form-group">
-                    <label htmlFor="reg-phone">Phone Number *</label>
+                    <label htmlFor="reg-phone">{t('login.phone')} *</label>
                     <input
                         id="reg-phone"
                         type="tel"
-                        placeholder="+91-1234567890"
+                        placeholder={t('login.phonePlaceholder')}
                         value={registerForm.phone}
                         onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
                         className={formErrors.phone ? 'error' : ''}
@@ -250,7 +250,7 @@ function LoginPage() {
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="reg-dob">Date of Birth *</label>
+                    <label htmlFor="reg-dob">{t('login.dob')} *</label>
                     <input
                         id="reg-dob"
                         type="date"
@@ -263,11 +263,11 @@ function LoginPage() {
             </div>
 
             <div className="form-group">
-                <label htmlFor="reg-address">Address *</label>
+                <label htmlFor="reg-address">{t('login.address')} *</label>
                 <input
                     id="reg-address"
                     type="text"
-                    placeholder="Enter your full address"
+                    placeholder={t('login.addressPlaceholder')}
                     value={registerForm.address}
                     onChange={(e) => setRegisterForm({ ...registerForm, address: e.target.value })}
                     className={formErrors.address ? 'error' : ''}
@@ -277,7 +277,7 @@ function LoginPage() {
 
             <div className="form-row">
                 <div className="form-group">
-                    <label htmlFor="reg-language">Preferred Language</label>
+                    <label htmlFor="reg-language">{t('login.preferredLanguage')}</label>
                     <select
                         id="reg-language"
                         value={registerForm.language}
@@ -290,28 +290,28 @@ function LoginPage() {
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="reg-chronic">Chronic Conditions</label>
+                    <label htmlFor="reg-chronic">{t('login.chronicConditions')}</label>
                     <input
                         id="reg-chronic"
                         type="text"
-                        placeholder="e.g., Diabetes, Hypertension"
+                        placeholder={t('login.chronicPlaceholder')}
                         value={registerForm.chronic_conditions}
                         onChange={(e) => setRegisterForm({ ...registerForm, chronic_conditions: e.target.value })}
                     />
-                    <span className="hint-text">Comma-separated list</span>
+                    <span className="hint-text">{t('login.commaSeparated')}</span>
                 </div>
             </div>
 
             <div className="form-group">
-                <label htmlFor="reg-allergies">Allergies</label>
+                <label htmlFor="reg-allergies">{t('login.allergies')}</label>
                 <input
                     id="reg-allergies"
                     type="text"
-                    placeholder="e.g., Penicillin, Aspirin"
+                    placeholder={t('login.allergiesPlaceholder')}
                     value={registerForm.allergies}
                     onChange={(e) => setRegisterForm({ ...registerForm, allergies: e.target.value })}
                 />
-                <span className="hint-text">Comma-separated list (important for drug safety checks)</span>
+                <span className="hint-text">{t('login.allergiesHint')}</span>
             </div>
 
             {formErrors.general && (
@@ -322,14 +322,14 @@ function LoginPage() {
                 {isLoading ? (
                     <span className="loading-spinner"></span>
                 ) : (
-                    'Create Account'
+                    t('login.createAccount')
                 )}
             </button>
 
             <p className="auth-switch-text">
-                Already have an account?{' '}
+                {t('login.haveAccount')}{' '}
                 <button type="button" className="link-btn" onClick={() => { setShowRegister(false); setFormErrors({}) }}>
-                    Login here
+                    {t('login.loginHere')}
                 </button>
             </p>
         </form>
@@ -358,14 +358,13 @@ function LoginPage() {
             </div>
 
             <div className="login-container">
-                {/* Logo and Title */}
                 <div className="login-header">
                     <div className="login-logo">
                         <span className="logo-icon-large">🤖</span>
-                        <span className="logo-text-large">AI Pharmacy</span>
+                        <span className="logo-text-large">{t('login.title')}</span>
                     </div>
                     <p className="login-subtitle">
-                        {showRegister ? 'Create your patient account' : 'Welcome back! Please login to continue'}
+                        {showRegister ? t('login.registerSubtitle') : t('login.subtitle')}
                     </p>
                 </div>
 
@@ -380,14 +379,14 @@ function LoginPage() {
                                     onClick={() => { setActiveTab('patient'); setFormErrors({}); clearError() }}
                                 >
                                     <span className="tab-icon">👤</span>
-                                    Patient
+                                    {t('login.patient')}
                                 </button>
                                 <button
                                     className={`login-tab ${activeTab === 'admin' ? 'active' : ''}`}
                                     onClick={() => { setActiveTab('admin'); setFormErrors({}); clearError() }}
                                 >
                                     <span className="tab-icon">🔐</span>
-                                    Admin
+                                    {t('login.admin')}
                                 </button>
                             </div>
 
@@ -401,9 +400,9 @@ function LoginPage() {
                     {showRegister ? (
                         <div className="register-header">
                             <button className="back-btn" onClick={() => { setShowRegister(false); setFormErrors({}) }}>
-                                ← Back to Login
+                                {t('login.backToLogin')}
                             </button>
-                            <h2>Patient Registration</h2>
+                            <h2>{t('login.patientRegistration')}</h2>
                         </div>
                     ) : null}
 
@@ -415,7 +414,7 @@ function LoginPage() {
 
                 {/* Footer */}
                 <div className="login-footer">
-                    <p>Secured by AI-powered healthcare technology</p>
+                    <p>{t('login.footer')}</p>
                 </div>
             </div>
         </div>
