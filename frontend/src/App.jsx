@@ -6,6 +6,7 @@ import AdminDashboard from './components/AdminDashboard'
 import Catalog from './components/Catalog'
 import Cart from './components/Cart'
 import LoginPage from './components/LoginPage'
+import PatientSettings from './components/PatientSettings'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN APP WITH ROLE-BASED ACCESS CONTROL
@@ -126,7 +127,8 @@ function AppContent() {
     const sideNavItems = [
         { id: 'chat', icon: '💬', label: t('nav.chat') },
         { id: 'catalog', icon: '🛒', label: t('nav.catalog') },
-        { id: 'cart', icon: '🛍️', label: t('nav.cart'), badge: cartItems.length > 0 ? cartItems.length : null }
+        { id: 'cart', icon: '🛍️', label: t('nav.cart'), badge: cartItems.length > 0 ? cartItems.length : null },
+        { id: 'settings', icon: '⚙️', label: 'Settings' }
     ]
 
     return (
@@ -215,6 +217,9 @@ function AppContent() {
                                     onCheckout={handleCheckout}
                                     customerId={effectiveCustomerId}
                                 />
+                            </div>
+                            <div style={{ display: activeView === 'settings' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
+                                <PatientSettings />
                             </div>
                         </>
                     )}
