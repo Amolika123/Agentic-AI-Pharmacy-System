@@ -26,6 +26,15 @@ function AdminDashboard({ systemStatus }) {
     // Orders filter state
     const [orderStatusFilter, setOrderStatusFilter] = useState('')
 
+    // Inventory edit state
+    const [editingItem, setEditingItem] = useState(null)
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [editForm, setEditForm] = useState({
+        stock_quantity: 0,
+        unit_price: 0,
+        reorder_level: 0
+    })
+
     useEffect(() => {
         fetchDashboardData()
         const interval = setInterval(fetchDashboardData, 30000)
@@ -106,6 +115,44 @@ function AdminDashboard({ systemStatus }) {
     const closePatientModal = () => {
         setShowPatientModal(false)
         setSelectedPatient(null)
+    }
+
+    // Inventory edit handlers
+    const openEditModal = (item) => {
+        setEditingItem(item)
+        setEditForm({
+            stock_quantity: item.stock_quantity || 0,
+            unit_price: parseFloat(item.unit_price || item.price || 0),
+            reorder_level: parseInt(item.reorder_level || 10)
+        })
+        setShowEditModal(true)
+    }
+
+    const closeEditModal = () => {
+        setShowEditModal(false)
+        setEditingItem(null)
+    }
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault()
+        if (!editingItem) return
+
+        try {
+            const res = await fetch(`/api/v1/inventory/${editingItem.medicine_id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editForm)
+            })
+            const data = await res.json()
+            if (data.success) {
+                closeEditModal()
+                fetchDashboardData() // Refresh inventory
+            } else {
+                console.error('Failed to update:', data)
+            }
+        } catch (error) {
+            console.error('Error updating inventory:', error)
+        }
     }
 
     // Tab definitions
@@ -285,7 +332,10 @@ function AdminDashboard({ systemStatus }) {
                             </span>
                             <span className="stock-unit">{item.unit}</span>
                         </div>
-                        <div className="inv-price">₹{item.price}</div>
+                        <div className="inv-footer">
+                            <span className="inv-price">₹{item.unit_price || item.price}</span>
+                            <button className="edit-btn" onClick={() => openEditModal(item)}>✏️ Edit</button>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -497,6 +547,58 @@ function AdminDashboard({ systemStatus }) {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Inventory Edit Modal */}
+            {showEditModal && editingItem && (
+                <div className="modal-overlay" onClick={closeEditModal}>
+                    <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Edit Inventory</h2>
+                            <button className="modal-close-btn" onClick={closeEditModal}>✕</button>
+                        </div>
+                        <form onSubmit={handleEditSubmit} className="edit-form">
+                            <div className="edit-item-name">{editingItem.name}</div>
+                            <div className="edit-item-category">{editingItem.category}</div>
+
+                            <div className="form-group">
+                                <label>Stock Quantity</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={editForm.stock_quantity}
+                                    onChange={(e) => setEditForm({ ...editForm, stock_quantity: parseInt(e.target.value) || 0 })}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Unit Price (₹)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={editForm.unit_price}
+                                    onChange={(e) => setEditForm({ ...editForm, unit_price: parseFloat(e.target.value) || 0 })}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Reorder Level</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={editForm.reorder_level}
+                                    onChange={(e) => setEditForm({ ...editForm, reorder_level: parseInt(e.target.value) || 0 })}
+                                />
+                            </div>
+
+                            <div className="form-actions">
+                                <button type="button" className="cancel-btn" onClick={closeEditModal}>Cancel</button>
+                                <button type="submit" className="save-btn">Save Changes</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
