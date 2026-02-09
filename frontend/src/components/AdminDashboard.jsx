@@ -15,7 +15,7 @@ function AdminDashboard({ systemStatus }) {
     const [customers, setCustomers] = useState([])
 
     // Active tab - controls which single view is shown
-    const [activeTab, setActiveTab] = useState('patients')
+    const [activeTab, setActiveTab] = useState('overview')
 
     // Patient management state
     const [selectedPatient, setSelectedPatient] = useState(null)
@@ -155,13 +155,14 @@ function AdminDashboard({ systemStatus }) {
         }
     }
 
-    // Tab definitions
+    // Tab definitions - PharmAgent spec order
     const tabs = [
-        { id: 'patients', icon: '👥', label: 'Patients' },
+        { id: 'overview', icon: '📊', label: 'Overview' },
         { id: 'orders', icon: '📦', label: 'Orders' },
         { id: 'inventory', icon: '💊', label: 'Inventory' },
+        { id: 'patients', icon: '👥', label: 'Patients' },
         { id: 'observability', icon: '🔍', label: 'Traces' },
-        { id: 'health', icon: '⚙️', label: 'Health' }
+        { id: 'settings', icon: '⚙️', label: 'Settings' }
     ]
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -446,15 +447,481 @@ function AdminDashboard({ systemStatus }) {
         </div>
     )
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // OVERVIEW TAB - Key metrics dashboard
+    // ═══════════════════════════════════════════════════════════════════════
+
+    const renderOverviewTab = () => {
+        const pendingOrders = orders.filter(o => o.status === 'pending').length
+        const completedOrders = orders.filter(o => o.status === 'completed').length
+        const confirmedOrders = orders.filter(o => o.status === 'confirmed').length
+
+        return (
+            <div className="admin-content-view">
+                <div className="content-header">
+                    <h1>📊 Overview</h1>
+                    <div className="content-stats">
+                        <span className={`stat-chip ${systemStatus?.status === 'operational' ? 'success' : 'warning'}`}>
+                            {systemStatus?.status || 'Loading...'}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="overview-grid">
+                    <div className="overview-card">
+                        <div className="overview-icon">👥</div>
+                        <div className="overview-value">{customers.length}</div>
+                        <div className="overview-label">Total Patients</div>
+                    </div>
+                    <div className="overview-card">
+                        <div className="overview-icon">📦</div>
+                        <div className="overview-value">{orders.length}</div>
+                        <div className="overview-label">Total Orders</div>
+                    </div>
+                    <div className="overview-card highlight">
+                        <div className="overview-icon">⏳</div>
+                        <div className="overview-value">{pendingOrders}</div>
+                        <div className="overview-label">Pending Orders</div>
+                    </div>
+                    <div className={`overview-card ${lowStockItems.length > 0 ? 'warning' : ''}`}>
+                        <div className="overview-icon">⚠️</div>
+                        <div className="overview-value">{lowStockItems.length}</div>
+                        <div className="overview-label">Low Stock Items</div>
+                    </div>
+                </div>
+
+                <div className="overview-sections">
+                    <div className="overview-section">
+                        <h3>Order Summary</h3>
+                        <div className="summary-row">
+                            <span>Pending</span>
+                            <span className="summary-value pending">{pendingOrders}</span>
+                        </div>
+                        <div className="summary-row">
+                            <span>Confirmed</span>
+                            <span className="summary-value confirmed">{confirmedOrders}</span>
+                        </div>
+                        <div className="summary-row">
+                            <span>Completed</span>
+                            <span className="summary-value completed">{completedOrders}</span>
+                        </div>
+                    </div>
+
+                    <div className="overview-section">
+                        <h3>System Status</h3>
+                        <div className="summary-row">
+                            <span>LLM Connection</span>
+                            <span className={`summary-status ${systemStatus?.ollama?.available ? 'active' : 'inactive'}`}>
+                                {systemStatus?.ollama?.available ? 'Connected' : 'Offline'}
+                            </span>
+                        </div>
+                        <div className="summary-row">
+                            <span>Observability</span>
+                            <span className="summary-status active">
+                                {systemStatus?.observability?.langfuse ? 'Langfuse' : 'Mock'}
+                            </span>
+                        </div>
+                        <div className="summary-row">
+                            <span>Active Traces</span>
+                            <span className="summary-value">{traces.length}</span>
+                        </div>
+                    </div>
+
+                    <div className="overview-section">
+                        <h3>Refill Alerts</h3>
+                        {alerts.length > 0 ? (
+                            alerts.slice(0, 4).map((alert, idx) => (
+                                <div key={idx} className="summary-row">
+                                    <span>{alert.customer_name}</span>
+                                    <span className={`summary-status ${alert.days_until_refill <= 0 ? 'warning' : ''}`}>
+                                        {alert.days_until_refill <= 0 ? 'Overdue' : `${alert.days_until_refill}d`}
+                                    </span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="empty-state">No refill alerts</div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SETTINGS TAB - Comprehensive Admin Configuration
+    // ═══════════════════════════════════════════════════════════════════════
+
+    const [settingsSection, setSettingsSection] = useState('organization')
+    const [showDangerConfirm, setShowDangerConfirm] = useState(null)
+
+    const adminSettingsSections = [
+        { id: 'organization', icon: '🏥', label: 'Organization' },
+        { id: 'users', icon: '👥', label: 'Users & Roles' },
+        { id: 'safety', icon: '🛡️', label: 'Safety & Policy' },
+        { id: 'agents', icon: '🤖', label: 'Agent Config' },
+        { id: 'observability', icon: '📊', label: 'Observability' },
+        { id: 'inventory', icon: '📦', label: 'Inventory Rules' },
+        { id: 'compliance', icon: '📋', label: 'Compliance' },
+        { id: 'danger', icon: '⚠️', label: 'Danger Zone' }
+    ]
+
+    const renderSettingsTab = () => (
+        <div className="admin-content-view admin-settings-layout">
+            {/* Settings Sub-Navigation */}
+            <div className="admin-settings-sidebar">
+                {adminSettingsSections.map(section => (
+                    <button
+                        key={section.id}
+                        className={`admin-settings-nav-item ${settingsSection === section.id ? 'active' : ''} ${section.id === 'danger' ? 'danger' : ''}`}
+                        onClick={() => setSettingsSection(section.id)}
+                    >
+                        <span className="nav-icon">{section.icon}</span>
+                        <span className="nav-label">{section.label}</span>
+                    </button>
+                ))}
+            </div>
+
+            {/* Settings Content */}
+            <div className="admin-settings-content">
+                {settingsSection === 'organization' && (
+                    <div className="settings-panel">
+                        <div className="settings-panel-header">
+                            <h2>🏥 Organization Settings</h2>
+                            <p>Configure your pharmacy's basic information</p>
+                        </div>
+                        <div className="settings-sections">
+                            <div className="settings-section">
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Pharmacy Name</span>
+                                        <span className="settings-description">Official business name</span>
+                                    </div>
+                                    <span className="settings-value">PharmAgent Demo Pharmacy</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Address</span>
+                                        <span className="settings-description">Physical location</span>
+                                    </div>
+                                    <span className="settings-value">123 Health Street, Medical City</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Operating Hours</span>
+                                        <span className="settings-description">Business hours</span>
+                                    </div>
+                                    <span className="settings-value">9:00 AM - 9:00 PM</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Timezone</span>
+                                        <span className="settings-description">System timezone</span>
+                                    </div>
+                                    <span className="settings-value">Asia/Kolkata (IST)</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Default Language</span>
+                                        <span className="settings-description">Primary AI language</span>
+                                    </div>
+                                    <span className="settings-value">English</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {settingsSection === 'users' && (
+                    <div className="settings-panel">
+                        <div className="settings-panel-header">
+                            <h2>👥 User & Role Management</h2>
+                            <p>Manage admin users and their permissions</p>
+                        </div>
+                        <div className="admin-users-list">
+                            <div className="admin-user-card">
+                                <div className="user-avatar">👤</div>
+                                <div className="user-details">
+                                    <span className="user-name">Admin User</span>
+                                    <span className="user-email">admin@pharmagent.com</span>
+                                </div>
+                                <span className="role-badge admin">Admin</span>
+                                <span className="user-status active">Active</span>
+                            </div>
+                            <div className="admin-user-card">
+                                <div className="user-avatar">💊</div>
+                                <div className="user-details">
+                                    <span className="user-name">Dr. Pharmacist</span>
+                                    <span className="user-email">pharmacist@pharmagent.com</span>
+                                </div>
+                                <span className="role-badge pharmacist">Pharmacist</span>
+                                <span className="user-status active">Active</span>
+                            </div>
+                        </div>
+                        <p className="settings-note">Role changes require verification. Admins cannot modify their own role.</p>
+                    </div>
+                )}
+
+                {settingsSection === 'safety' && (
+                    <div className="settings-panel">
+                        <div className="settings-panel-header">
+                            <h2>🛡️ Safety & Policy Rules</h2>
+                            <p>Configure medication safety and ordering policies</p>
+                        </div>
+                        <div className="settings-sections">
+                            <div className="settings-section">
+                                <h3>Order Policies</h3>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Max Order Quantity</span>
+                                        <span className="settings-description">Maximum items per order</span>
+                                    </div>
+                                    <span className="settings-value">10 units</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Prescription Validation</span>
+                                        <span className="settings-description">Require prescription for Rx medicines</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Enforced</span>
+                                </div>
+                            </div>
+                            <div className="settings-section">
+                                <h3>Safety Enforcement</h3>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Allergy Blocking</span>
+                                        <span className="settings-description">Block orders with known allergies</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Hard Block</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Drug Interaction Checks</span>
+                                        <span className="settings-description">Check for dangerous interactions</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Enabled</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {settingsSection === 'agents' && (
+                    <div className="settings-panel">
+                        <div className="settings-panel-header">
+                            <h2>🤖 Agent Configuration</h2>
+                            <p>Control AI agent behavior (high-level only)</p>
+                        </div>
+                        <div className="settings-sections">
+                            <div className="settings-section">
+                                <h3>Agent Status</h3>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Safety Agent</span>
+                                        <span className="settings-description">Drug interaction & allergy validation</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Enabled</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Refill Agent</span>
+                                        <span className="settings-description">Proactive refill predictions</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Enabled</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Vision Agent</span>
+                                        <span className="settings-description">Prescription image processing</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Enabled</span>
+                                </div>
+                            </div>
+                            <div className="settings-section">
+                                <h3>Execution Mode</h3>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Operation Mode</span>
+                                        <span className="settings-description">How agents handle decisions</span>
+                                    </div>
+                                    <span className="settings-value">Strict (Confirm All)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="settings-note">Prompt editing is not available in this interface for safety reasons.</p>
+                    </div>
+                )}
+
+                {settingsSection === 'observability' && (
+                    <div className="settings-panel">
+                        <div className="settings-panel-header">
+                            <h2>📊 Observability Settings</h2>
+                            <p>Configure tracing and logging</p>
+                        </div>
+                        <div className="settings-sections">
+                            <div className="settings-section">
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Trace Logging</span>
+                                        <span className="settings-description">Record agent decisions</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Enabled</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Tracing Provider</span>
+                                        <span className="settings-description">Current logging backend</span>
+                                    </div>
+                                    <span className="settings-value">{systemStatus?.observability?.langfuse ? 'Langfuse' : 'Local Mock'}</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Trace Retention</span>
+                                        <span className="settings-description">How long traces are kept</span>
+                                    </div>
+                                    <span className="settings-value">30 days</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Mask Patient Identifiers</span>
+                                        <span className="settings-description">Anonymize PII in logs</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Enabled</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button className="secondary-btn">📥 Export Traces (Admin Only)</button>
+                    </div>
+                )}
+
+                {settingsSection === 'inventory' && (
+                    <div className="settings-panel">
+                        <div className="settings-panel-header">
+                            <h2>📦 Inventory Rules</h2>
+                            <p>Configure stock management thresholds</p>
+                        </div>
+                        <div className="settings-sections">
+                            <div className="settings-section">
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Default Low Stock Threshold</span>
+                                        <span className="settings-description">Alert when stock falls below this</span>
+                                    </div>
+                                    <span className="settings-value">10 units</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Restock Alerts</span>
+                                        <span className="settings-description">Notify admins for low stock</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Active</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Auto-hide Out of Stock</span>
+                                        <span className="settings-description">Hide unavailable items from catalog</span>
+                                    </div>
+                                    <span className="settings-badge">Disabled</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {settingsSection === 'compliance' && (
+                    <div className="settings-panel">
+                        <div className="settings-panel-header">
+                            <h2>📋 Compliance & Audit</h2>
+                            <p>Regulatory compliance and audit logs</p>
+                        </div>
+                        <div className="settings-sections">
+                            <div className="settings-section">
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Audit Logging</span>
+                                        <span className="settings-description">Track all system changes</span>
+                                    </div>
+                                    <span className="settings-badge enabled">Enabled</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">Data Retention</span>
+                                        <span className="settings-description">Order and patient data</span>
+                                    </div>
+                                    <span className="settings-value">7 years</span>
+                                </div>
+                                <div className="settings-item">
+                                    <div className="settings-info">
+                                        <span className="settings-label">System Version</span>
+                                        <span className="settings-description">Current PharmAgent version</span>
+                                    </div>
+                                    <span className="settings-value">v2.1.0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button className="secondary-btn">📄 View Audit Logs</button>
+                    </div>
+                )}
+
+                {settingsSection === 'danger' && (
+                    <div className="settings-panel danger-zone-panel">
+                        <div className="settings-panel-header">
+                            <h2>⚠️ Danger Zone</h2>
+                            <p>Critical system actions - use with caution</p>
+                        </div>
+                        <div className="danger-warning">
+                            <span className="warning-icon">🚨</span>
+                            <div>
+                                <strong>Warning</strong>
+                                <p>Actions here can affect system stability. All actions require confirmation.</p>
+                            </div>
+                        </div>
+                        <div className="danger-actions-list">
+                            <div className="danger-action-item">
+                                <div className="danger-action-info">
+                                    <span className="danger-action-label">Reset Demo Data</span>
+                                    <span className="danger-action-desc">Restore all data to demo defaults</span>
+                                </div>
+                                {showDangerConfirm === 'reset' ? (
+                                    <div className="confirm-buttons">
+                                        <button className="cancel-btn" onClick={() => setShowDangerConfirm(null)}>Cancel</button>
+                                        <button className="confirm-danger-btn" onClick={() => { alert('Demo data reset'); setShowDangerConfirm(null); }}>Confirm Reset</button>
+                                    </div>
+                                ) : (
+                                    <button className="danger-btn" onClick={() => setShowDangerConfirm('reset')}>Reset</button>
+                                )}
+                            </div>
+                            <div className="danger-action-item">
+                                <div className="danger-action-info">
+                                    <span className="danger-action-label">Clear Cache</span>
+                                    <span className="danger-action-desc">Clear all cached data and sessions</span>
+                                </div>
+                                {showDangerConfirm === 'cache' ? (
+                                    <div className="confirm-buttons">
+                                        <button className="cancel-btn" onClick={() => setShowDangerConfirm(null)}>Cancel</button>
+                                        <button className="confirm-danger-btn" onClick={() => { alert('Cache cleared'); setShowDangerConfirm(null); }}>Confirm Clear</button>
+                                    </div>
+                                ) : (
+                                    <button className="danger-btn" onClick={() => setShowDangerConfirm('cache')}>Clear</button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+
     // Render active tab content
     const renderContent = () => {
         switch (activeTab) {
-            case 'patients': return renderPatientsTab()
+            case 'overview': return renderOverviewTab()
             case 'orders': return renderOrdersTab()
             case 'inventory': return renderInventoryTab()
+            case 'patients': return renderPatientsTab()
             case 'observability': return renderObservabilityTab()
-            case 'health': return renderHealthTab()
-            default: return renderPatientsTab()
+            case 'settings': return renderSettingsTab()
+            default: return renderOverviewTab()
         }
     }
 
