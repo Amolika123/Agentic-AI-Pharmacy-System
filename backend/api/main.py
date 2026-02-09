@@ -534,6 +534,59 @@ async def get_medicine(medicine_id: str):
     return {"success": True, "medicine": medicine}
 
 
+class InventoryUpdateRequest(BaseModel):
+    stock_quantity: Optional[int] = None
+    unit_price: Optional[float] = None
+    reorder_level: Optional[int] = None
+    name: Optional[str] = None
+    category: Optional[str] = None
+
+
+@app.put("/api/v1/inventory/{medicine_id}")
+async def update_inventory(medicine_id: str, request: InventoryUpdateRequest):
+    """Update inventory item (admin only)."""
+    csv_path = Path(__file__).parent.parent / "data" / "medicines.csv"
+    
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="Inventory file not found")
+    
+    # Read all medicines
+    medicines = []
+    fieldnames = []
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        medicines = list(reader)
+    
+    # Find and update the medicine
+    found = False
+    for med in medicines:
+        if med.get("medicine_id") == medicine_id:
+            found = True
+            if request.stock_quantity is not None:
+                med["stock_quantity"] = str(request.stock_quantity)
+            if request.unit_price is not None:
+                med["unit_price"] = str(request.unit_price)
+            if request.reorder_level is not None:
+                med["reorder_level"] = str(request.reorder_level)
+            if request.name is not None:
+                med["name"] = request.name
+            if request.category is not None:
+                med["category"] = request.category
+            break
+    
+    if not found:
+        raise HTTPException(status_code=404, detail="Medicine not found")
+    
+    # Write back to CSV
+    with open(csv_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(medicines)
+    
+    return {"success": True, "message": f"Inventory item {medicine_id} updated"}
+
+
 # ============ Customers ============
 
 @app.get("/api/v1/customers")
