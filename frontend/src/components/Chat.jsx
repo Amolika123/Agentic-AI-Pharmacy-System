@@ -3,21 +3,46 @@ import { useLanguage } from '../LanguageContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CHAT COMPONENT - Uses global language context for translations
+// Chat messages persist in localStorage per customer
 // ═══════════════════════════════════════════════════════════════════════════
+
+// Helper functions for localStorage persistence
+const getChatStorageKey = (customerId) => `pharmacy_chat_${customerId}`
+const getSessionStorageKey = (customerId) => `pharmacy_session_${customerId}`
 
 function Chat({ customerId, onCartUpdate }) {
     const { language, setLanguage, t, langCode, LANGUAGES } = useLanguage()
 
-    const [messages, setMessages] = useState([
-        {
-            role: 'assistant',
-            content: t('chat.welcome'),
-            timestamp: new Date().toISOString()
+    // Initialize messages from localStorage or with welcome message
+    const [messages, setMessages] = useState(() => {
+        try {
+            const stored = localStorage.getItem(getChatStorageKey(customerId))
+            if (stored) {
+                const parsed = JSON.parse(stored)
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load chat history from localStorage:', e)
         }
-    ])
+        // Default welcome message
+        return [{
+            role: 'assistant',
+            content: 'Welcome to Agentic Pharmacy! 💊 How can I help you today?',
+            timestamp: new Date().toISOString()
+        }]
+    })
     const [inputValue, setInputValue] = useState('')
     const [isLoading, setIsLoading] = useState(false)
-    const [sessionId, setSessionId] = useState(null)
+    // Initialize sessionId from localStorage
+    const [sessionId, setSessionId] = useState(() => {
+        try {
+            return localStorage.getItem(getSessionStorageKey(customerId)) || null
+        } catch (e) {
+            return null
+        }
+    })
     const [pendingConfirmation, setPendingConfirmation] = useState(null)
     const [isRecording, setIsRecording] = useState(false)
     const [systemStatus, setSystemStatus] = useState(null)
@@ -35,6 +60,28 @@ function Chat({ customerId, onCartUpdate }) {
     useEffect(() => {
         scrollToBottom()
     }, [messages])
+
+    // Persist messages to localStorage whenever they change
+    useEffect(() => {
+        if (customerId && messages.length > 0) {
+            try {
+                localStorage.setItem(getChatStorageKey(customerId), JSON.stringify(messages))
+            } catch (e) {
+                console.warn('Failed to save chat history to localStorage:', e)
+            }
+        }
+    }, [messages, customerId])
+
+    // Persist sessionId to localStorage whenever it changes
+    useEffect(() => {
+        if (customerId && sessionId) {
+            try {
+                localStorage.setItem(getSessionStorageKey(customerId), sessionId)
+            } catch (e) {
+                console.warn('Failed to save session ID to localStorage:', e)
+            }
+        }
+    }, [sessionId, customerId])
 
     useEffect(() => {
         fetchSystemStatus()
