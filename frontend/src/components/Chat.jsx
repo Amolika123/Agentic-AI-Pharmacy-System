@@ -144,6 +144,11 @@ function Chat({ customerId, onCartUpdate }) {
         // Send the confirmation/decline as a message
         const confirmText = confirmed ? 'yes' : 'no'
         await sendMessage(confirmText)
+
+        // Clear/refresh the cart after cancellation confirmation
+        if (confirmed && onCartUpdate) {
+            onCartUpdate()
+        }
     }
 
     const sendMessage = async (messageText = inputValue) => {
