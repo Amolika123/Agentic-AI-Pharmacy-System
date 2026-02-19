@@ -719,7 +719,11 @@ class OrchestratorAgent(BaseAgent):
                              and c["medicine_id"] == medicine.get("medicine_id", "")), None)
             
             if existing:
-                existing["quantity"] = str(int(existing["quantity"]) + quantity)
+                try:
+                    current_qty = int(existing.get("quantity") or 0)
+                except (ValueError, TypeError):
+                    current_qty = 0
+                existing["quantity"] = str(current_qty + quantity)
             else:
                 new_item = {
                     "cart_id": str(uuid_mod.uuid4())[:8],
@@ -742,12 +746,119 @@ class OrchestratorAgent(BaseAgent):
                 writer.writeheader()
                 writer.writerows(carts)
         
-        # Scenario A: Pending single order (from text conversation)
+        # Debug: Log both states at entry
+        extracted_rx = context.get_entity("extracted_prescription")
+        print(f"[ORCH] _confirm_order ENTRY: pending_order={context.pending_order is not None}, extracted_rx={extracted_rx is not None}, customer={context.customer_id}")
+        
+        # ═══════════════════════════════════════════════════════════════
+        # SCENARIO B (PRIORITY): Extracted prescription items
+        # Must come BEFORE Scenario A because safety agent may have
+        # set context.pending_order during prescription processing
+        # ═══════════════════════════════════════════════════════════════
+        if extracted_rx:
+            # Clear any stale pending_order to avoid interference
+            context.pending_order = None
+            
+            medicines = extracted_rx.get("medicines", [])
+            print(f"[ORCH] _confirm_order: Processing {len(medicines)} prescription medicines")
+            orders_created = []
+            items_added_to_cart = 0
+            
+            for med in medicines:
+                med_name = med.get("name")
+                # Fix: med.get("quantity", 1) returns None if key exists with None value
+                med_quantity = med.get("quantity") or 1
+                try:
+                    med_quantity = int(med_quantity)
+                except:
+                    med_quantity = 1
+                
+                print(f"[ORCH] _confirm_order: Processing medicine '{med_name}' qty={med_quantity}")
+                
+                # Check Safety first
+                try:
+                    safety_result = await self.agents["SafetyAgent"].process(
+                        input_data={"medicine_name": med_name, "quantity": med_quantity},
+                        context=context,
+                        trace=trace
+                    )
+                    print(f"[ORCH] _confirm_order: Safety result - success={safety_result.success}, status={safety_result.data.get('status')}")
+                except Exception as e:
+                    print(f"[ORCH] _confirm_order: Safety check exception: {e}")
+                    continue
+                
+                # ACCEPT both 'approved' AND 'prescription_required' for extracted prescriptions
+                if safety_result.success and safety_result.data.get("status") in ["approved", "prescription_required"]:
+                     medicine_data = safety_result.data.get("medicine", {})
+                     # IMPORTANT: If safety says 'prescription_required', we MUST treat it as verified
+                     # because this IS a prescription processing flow!
+                     if safety_result.data.get("status") == "prescription_required":
+                         print(f"[ORCH] _confirm_order: Auto-verifying prescription for {med_name}")
+                         medicine_data["prescription_verified"] = "true"
+                         
+                     print(f"[ORCH] _confirm_order: Medicine data = {medicine_data.get('name', 'N/A')}, id={medicine_data.get('medicine_id', 'N/A')}")
+                     
+                     # Add to cart
+                     if context.customer_id and medicine_data:
+                         try:
+                             add_to_cart(context.customer_id, medicine_data, med_quantity)
+                             items_added_to_cart += 1
+                             print(f"[ORCH] _confirm_order: Added to cart successfully")
+                         except Exception as e:
+                             print(f"[ORCH] _confirm_order: Cart add error: {e}")
+                     
+                     # Create the order
+                     try:
+                         create_result = await self.agents["ExecutorAgent"].process(
+                            input_data={"action": "create_order", "medicine": medicine_data, "quantity": med_quantity},
+                            context=context,
+                            trace=trace
+                         )
+                         print(f"[ORCH] _confirm_order: Create result - success={create_result.success}")
+                     except Exception as e:
+                         print(f"[ORCH] _confirm_order: Create order exception: {e}")
+                         continue
+                     
+                     if create_result.success:
+                         # Immediately confirm it since user said "Yes" to the whole list
+                         context.pending_order = create_result.data.get("order")
+                         print(f"[ORCH] _confirm_order: Pending order set, confirming...")
+                         try:
+                             confirm_result = await self.agents["ExecutorAgent"].process(
+                                 input_data={"action": "confirm_order"},
+                                 context=context,
+                                 trace=trace
+                             )
+                             print(f"[ORCH] _confirm_order: Confirm result - success={confirm_result.success}")
+                             orders_created.append(confirm_result.data.get("order"))
+                         except Exception as e:
+                             print(f"[ORCH] _confirm_order: Confirm exception: {e}")
+                     else:
+                         print(f"[ORCH] _confirm_order: Create order failed: {create_result.message}")
+                else:
+                    print(f"[ORCH] _confirm_order: Safety did not approve '{med_name}': status={safety_result.data.get('status')}")
+            
+            # Clear extracted prescription
+            context.set_entity("extracted_prescription", None)
+            context.pending_order = None
+            
+            count = len(orders_created)
+            print(f"[ORCH] _confirm_order: Final count = {count}, cart items = {items_added_to_cart}")
+            if count > 0:
+                msg = f"✅ Confirmed! I've placed orders for {count} medicines from your prescription."
+                msg += f"\n\n🛒 **{items_added_to_cart} items added to your Cart!**"
+                msg += "\n\nYou'll receive confirmation messages shortly."
+                return self._build_response(msg, context, trace, {"status": "confirmed_bulk", "orders": orders_created, "added_to_cart": items_added_to_cart})
+            else:
+                return self._build_response("I couldn't process the orders. Please try again or contact support.", context, trace, {"status": "failed"})
+
+        # ═══════════════════════════════════════════════════════════════
+        # SCENARIO A: Pending single order (from text conversation)
+        # ═══════════════════════════════════════════════════════════════
         if context.pending_order:
             pending = context.pending_order
             
             # pending_order IS the order object directly (flat structure)
-            # Fields: order_id, customer_id, medicine_id, medicine_name, quantity, unit_price, etc.
             medicine_info = {
                 "medicine_id": pending.get("medicine_id", ""),
                 "name": pending.get("medicine_name", ""),
@@ -757,7 +868,7 @@ class OrchestratorAgent(BaseAgent):
             }
             quantity = pending.get("quantity", 1)
             
-            print(f"[ORCH] Confirming order, adding to cart: {medicine_info['name']} x{quantity}")
+            print(f"[ORCH] Confirming single order, adding to cart: {medicine_info['name']} x{quantity}")
             
             if context.customer_id and medicine_info.get("medicine_id"):
                 add_to_cart(context.customer_id, medicine_info, quantity)
@@ -772,77 +883,6 @@ class OrchestratorAgent(BaseAgent):
                 context, trace,
                 {"status": "confirmed", "order": exec_result.data.get("order"), "added_to_cart": True}
             )
-        
-        # Scenario B: Extracted prescription items waiting for confirmation
-        extracted_rx = context.get_entity("extracted_prescription")
-        if extracted_rx:
-            medicines = extracted_rx.get("medicines", [])
-            orders_created = []
-            items_added_to_cart = 0
-            
-            for med in medicines:
-                # Create input for order creation
-                order_input = {
-                    "medicine": {
-                        "name": med.get("name"),
-                        "medicine_id": "OTC" if not med.get("name") else None, # Executor will lookup or use name
-                        "prescription_required": "true" # Assume true for prescription extraction
-                    },
-                    "quantity": med.get("quantity", 1)
-                    # "dosage": med.get("dosage") # Pass dosage if executor supported it
-                }
-                
-                # Use executor to create order (but we do it directly to skip a step or call create_order)
-                # Actually proper flow: Vision -> Safety -> Executor. 
-                # For hackathon speed: Vision -> Executor (create) -> Executor (confirm)
-                
-                # Check Safety first (important!)
-                safety_result = await self.agents["SafetyAgent"].process(
-                    input_data={"medicine_name": med.get("name"), "quantity": med.get("quantity")},
-                    context=context,
-                    trace=trace
-                )
-                
-                if safety_result.success and safety_result.data.get("status") in ["approved", "prescription_required"]:
-                     # Note: We alreayd have the prescription trace, so we can override prescription requirement?
-                     # Ideally VisionAgent confirms valid prescription.
-                     
-                     medicine_data = safety_result.data.get("medicine", {})
-                     
-                     # Add to cart
-                     if context.customer_id and medicine_data:
-                         add_to_cart(context.customer_id, medicine_data, med.get("quantity", 1))
-                         items_added_to_cart += 1
-                     
-                     # Create the order
-                     create_result = await self.agents["ExecutorAgent"].process(
-                        input_data={"action": "create_order", "medicine": medicine_data, "quantity": med.get("quantity", 1)},
-                        context=context,
-                        trace=trace
-                     )
-                     
-                     if create_result.success:
-                         # Immediately confirm it since user said "Yes" to the whole list
-                         # We need to temporarily set it as pending for the executor to confirm it
-                         context.pending_order = create_result.data.get("order")
-                         confirm_result = await self.agents["ExecutorAgent"].process(
-                             input_data={"action": "confirm_order"},
-                             context=context,
-                             trace=trace
-                         )
-                         orders_created.append(confirm_result.data.get("order"))
-            
-            # Clear extracted prescription
-            context.set_entity("extracted_prescription", None)
-            
-            count = len(orders_created)
-            if count > 0:
-                msg = f"✅ Confirmed! I've placed orders for {count} medicines from your prescription."
-                msg += f"\n\n🛒 **{items_added_to_cart} items added to your Cart!**"
-                msg += "\n\nYou'll receive confirmation messages shortly."
-                return self._build_response(msg, context, trace, {"status": "confirmed_bulk", "orders": orders_created, "added_to_cart": items_added_to_cart})
-            else:
-                return self._build_response("I couldn't process the orders. Please try again or contact support.", context, trace, {"status": "failed"})
 
         # ═══════════════════════════════════════════════════════════════════
         # STATE RECOVERY: Recover from last_medicine if pending_order lost

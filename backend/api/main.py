@@ -210,26 +210,39 @@ async def chat(request: ChatRequest):
 
 @app.post("/api/v1/chat/confirm", response_model=ChatResponse)
 async def confirm_order(request: OrderConfirmRequest):
-    """Confirm or cancel a pending order."""
+    """Confirm or cancel a pending order - calls orchestrator directly."""
     try:
-        if request.confirmed:
-            message = "yes"
-        else:
-            message = "no, cancel it"
-        
-        result = await orchestrator_agent.handle_message(
-            message=message,
-            session_id=request.session_id,
-            customer_id=request.customer_id
+        # Get or create session context
+        context = orchestrator_agent._get_or_create_context(
+            request.session_id, request.customer_id
         )
+        
+        # Create trace for observability
+        from services.langfuse_client import tracer
+        trace = tracer.create_trace(
+            name="order_confirmation",
+            user_id=request.customer_id or "guest",
+            session_id=request.session_id,
+            metadata={"confirmed": request.confirmed},
+            tags=["pharmacy", "confirmation"]
+        )
+        
+        if request.confirmed:
+            # Call _confirm_order directly - bypasses handle_message routing
+            result = await orchestrator_agent._confirm_order(context, trace)
+        else:
+            # Call _cancel_order directly
+            result = await orchestrator_agent._cancel_order(context, trace)
         
         return ChatResponse(
             success=result.get("success", False),
             response=result.get("response", ""),
-            session_id=result.get("session_id", ""),
+            session_id=result.get("session_id", request.session_id),
             data=result.get("data")
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -457,6 +470,18 @@ async def remove_from_cart(request: CartRemoveRequest):
                                        and c["medicine_id"] == request.medicine_id)]
     _save_carts(carts)
     return {"success": True, "message": "Item removed from cart"}
+
+
+@app.delete("/api/v1/cart/{customer_id}")
+async def clear_cart(customer_id: str):
+    """Clear all items from the cart for a specific customer."""
+    try:
+        carts = _load_carts()
+        remaining_carts = [c for c in carts if c["customer_id"] != customer_id]
+        _save_carts(remaining_carts)
+        return {"success": True, "message": "Cart cleared"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/v1/cart/checkout")

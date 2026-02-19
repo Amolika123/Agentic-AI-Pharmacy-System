@@ -1,11 +1,11 @@
 medicine_id,name,generic_name,category,stock_quantity,unit,unit_price,prescription_required,manufacturer,dosage_form,strength,reorder_level,active
-MED001,Paracetamol 500mg,Paracetamol,Pain Relief,472,tablets,2.50,false,GSK,Tablet,500mg,100,true
+MED001,Paracetamol 500mg,Paracetamol,Pain Relief,467,tablets,2.50,false,GSK,Tablet,500mg,100,true
 MED002,Ibuprofen 400mg,Ibuprofen,Pain Relief,347,tablets,3.00,false,Cipla,Tablet,400mg,75,true
 MED003,Amoxicillin 500mg,Amoxicillin,Antibiotic,200,capsules,8.50,true,Sun Pharma,Capsule,500mg,50,true
 MED004,Azithromycin 250mg,Azithromycin,Antibiotic,150,tablets,12.0,true,Zydus,Tablet,250mg,40,true
 MED005,Cetirizine 10mg,Cetirizine,Antihistamine,394,tablets,1.5,false,Dr Reddy's,Tablet,10mg,80,true
 MED006,Omeprazole 20mg,Omeprazole,Gastro,300,capsules,4.00,false,Ranbaxy,Capsule,20mg,60,true
-MED007,Metformin 500mg,Metformin,Diabetes,249,tablets,2.00,true,USV,Tablet,500mg,50,true
+MED007,Metformin 500mg,Metformin,Diabetes,236,tablets,2.00,true,USV,Tablet,500mg,50,true
 MED008,Amlodipine 5mg,Amlodipine,Cardiac,180,tablets,3.50,true,Intas,Tablet,5mg,40,true
 MED009,Atorvastatin 10mg,Atorvastatin,Cardiac,200,tablets,5.00,true,Biocon,Tablet,10mg,45,true
 MED010,Losartan 50mg,Losartan,Cardiac,220,tablets,4.50,true,Lupin,Tablet,50mg,50,true

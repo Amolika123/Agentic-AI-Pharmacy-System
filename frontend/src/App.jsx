@@ -33,7 +33,8 @@ function AppContent() {
     useEffect(() => {
         if (isAuthenticated) {
             fetchSystemStatus()
-            loadCart()
+            // Clear cart on reload/login as requested for demo
+            clearCartAndLoad()
         }
     }, [isAuthenticated, effectiveCustomerId])
 
@@ -44,6 +45,19 @@ function AppContent() {
             setSystemStatus(data)
         } catch (error) {
             console.error('Failed to fetch system status:', error)
+        }
+    }
+
+    const clearCartAndLoad = async () => {
+        try {
+            // First clear the cart
+            await fetch(`/api/v1/cart/${effectiveCustomerId}`, { method: 'DELETE' })
+            setCartItems([])
+            // Then load (will be empty, but good to sync)
+            loadCart()
+        } catch (error) {
+            console.error('Failed to clear cart:', error)
+            loadCart()
         }
     }
 
