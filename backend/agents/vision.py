@@ -317,9 +317,7 @@ class VisionAgent(BaseAgent):
             msg_parts.append("⚠️ *I was able to read some details. Please confirm if this looks correct.*\n")
         
         # MANDATORY CONFIRMATION QUESTION
-        msg_parts.append("**Do you want me to add these medicines to your order?**\n")
-        msg_parts.append("• **Yes, add them**")
-        msg_parts.append("• **No, don't add**")
+        msg_parts.append("**Do you want me to add these medicines to your order?**")
         
         return "\n".join(msg_parts)
     

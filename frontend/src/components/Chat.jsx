@@ -48,6 +48,7 @@ function Chat({ customerId, onCartUpdate }) {
     const [systemStatus, setSystemStatus] = useState(null)
     const [refillAlerts, setRefillAlerts] = useState([])
     const [cancelConfirmation, setCancelConfirmation] = useState(null)
+    const [prescriptionConfirmation, setPrescriptionConfirmation] = useState(null)
     const [imagePreview, setImagePreview] = useState(null)
     const messagesEndRef = useRef(null)
     const recognitionRef = useRef(null)
@@ -243,6 +244,11 @@ function Chat({ customerId, onCartUpdate }) {
                 setPendingConfirmation({ sessionId: data.session_id })
             }
 
+            // Check for prescription confirmation
+            if (data.data?.status === 'prescription_analyzed') {
+                setPrescriptionConfirmation({ sessionId: data.session_id })
+            }
+
             // Check for cancel confirmation
             if (data.data?.status === 'awaiting_cancel_confirmation') {
                 setCancelConfirmation({ sessionId: data.session_id, message: data.response })
@@ -291,6 +297,42 @@ function Chat({ customerId, onCartUpdate }) {
             setIsLoading(false)
             setPendingConfirmation(null)
             // Refresh cart after confirmation
+            if (onCartUpdate) onCartUpdate()
+        }
+    }
+
+    const handlePrescriptionConfirmation = async (confirmed) => {
+        if (!prescriptionConfirmation) return
+        setIsLoading(true)
+
+        try {
+            const response = await fetch('/api/v1/chat/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: prescriptionConfirmation.sessionId,
+                    confirmed,
+                    customer_id: customerId
+                })
+            })
+
+            const data = await response.json()
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: data.response,
+                timestamp: new Date().toISOString()
+            }])
+        } catch (error) {
+            console.error('Prescription confirmation error:', error)
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: '⚠️ Failed to process prescription confirmation. Please try again.',
+                timestamp: new Date().toISOString()
+            }])
+        } finally {
+            setIsLoading(false)
+            setPrescriptionConfirmation(null)
+            // Refresh cart after prescription confirmation
             if (onCartUpdate) onCartUpdate()
         }
     }
@@ -357,6 +399,10 @@ function Chat({ customerId, onCartUpdate }) {
                 // Check for confirmation if needed
                 if (data.data?.status === 'awaiting_confirmation') {
                     setPendingConfirmation({ sessionId: data.session_id })
+                }
+                // Check for prescription confirmation
+                if (data.data?.status === 'prescription_analyzed') {
+                    setPrescriptionConfirmation({ sessionId: data.session_id })
                 }
                 // Check for cancel confirmation
                 if (data.data?.status === 'awaiting_cancel_confirmation') {
@@ -582,6 +628,21 @@ function Chat({ customerId, onCartUpdate }) {
                     </button>
                     <button className="cancel-btn" onClick={() => handleConfirmation(false)}>
                         {t('chat.confirmCancel')}
+                    </button>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════════════ */}
+            {/* PRESCRIPTION CONFIRMATION DIALOG - Floating bar for Rx medicines     */}
+            {/* ═══════════════════════════════════════════════════════════════════════ */}
+            {prescriptionConfirmation && (
+                <div className="confirmation-dialog">
+                    <span>📄 Confirm adding medicines?</span>
+                    <button className="confirm-btn" onClick={() => handlePrescriptionConfirmation(true)}>
+                        ✓ Yes, Add to Cart
+                    </button>
+                    <button className="cancel-btn" onClick={() => handlePrescriptionConfirmation(false)}>
+                        ✕ Cancel
                     </button>
                 </div>
             )}

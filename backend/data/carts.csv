@@ -1,1 +1,2 @@
 cart_id,customer_id,medicine_id,medicine_name,quantity,unit_price,dosage_form,prescription_required,added_at
+52081703,CUST003,MED007,Metformin 500mg,4,2.00,Tablet,true,2026-02-19T07:54:17.290523
