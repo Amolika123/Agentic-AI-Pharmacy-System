@@ -198,6 +198,101 @@ class OrchestratorAgent(BaseAgent):
                 return await self._initiate_cancellation(context, trace)
             
             # ═══════════════════════════════════════════════════════════
+            # FAST REFILL: Skip LLM for known refill phrases (all langs)
+            # ═══════════════════════════════════════════════════════════
+            FAST_REFILL_PHRASES = {
+                "refill my prescription", "refill prescription",
+                "i want to refill", "refill my medicine",
+                # Hindi
+                "मेरी दवाई रिफिल करें",
+                # German
+                "mein rezept nachfüllen",
+            }
+            if msg_lower in FAST_REFILL_PHRASES and context.customer_id:
+                print(f"[ORCH] Fast refill: '{msg_lower}'")
+                refill_medicine = self._get_refill_medicine(context.customer_id)
+                if refill_medicine:
+                    med_name = refill_medicine.get("name", "your medicine")
+                    unit_price = float(refill_medicine.get("unit_price", 0))
+                    context.pending_order = {
+                        "order_id": f"ORD{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+                        "customer_id": context.customer_id,
+                        "medicine": refill_medicine,
+                        "medicine_id": refill_medicine.get("medicine_id", ""),
+                        "medicine_name": med_name,
+                        "quantity": 1,
+                        "unit_price": unit_price,
+                        "total": unit_price * 1,
+                        "dosage_form": refill_medicine.get("dosage_form", ""),
+                        "prescription_required": refill_medicine.get("prescription_required", "false"),
+                        "prescription_verified": True,
+                        "auto_refill": True
+                    }
+                    context.set_entity("last_medicine", refill_medicine)
+                    return self._build_response(
+                        f"Would you like to refill **{med_name}**?",
+                        context, trace,
+                        {"status": "awaiting_confirmation", "medicine": refill_medicine, "auto_refill": True, "fast_path": True}
+                    )
+                else:
+                    return self._build_response(
+                        "I couldn't find a recent prescription in your history. Please specify which medicine you'd like to order.",
+                        context, trace,
+                        {"status": "no_refill_history", "fast_path": True}
+                    )
+            
+            # ═══════════════════════════════════════════════════════════
+            # FAST ORDER / AVAILABILITY: Skip LLM for known patterns
+            # Matches: "I need X", "Check if X is available", "I want to refill X"
+            # ═══════════════════════════════════════════════════════════
+            import re
+            
+            # Pattern: "I need <medicine>"
+            order_match = re.match(
+                r"^(?:i need|i want|i'd like|give me|get me|order|मुझे .+ चाहिए|ich brauche)\s+(.+?)\.?$",
+                msg_lower
+            )
+            if order_match:
+                med_name = order_match.group(1).strip()
+                print(f"[ORCH] Fast order: '{med_name}'")
+                fake_result = AgentResponse(
+                    success=True,
+                    data={"intent": "order_medicine", "entities": {"medicine_name": med_name}},
+                    message=""
+                )
+                return await self._process_order_flow(fake_result, context, trace)
+            
+            # Pattern: "Check if <medicine> is available"
+            avail_match = re.match(
+                r"^(?:check if|is|do you have|check)\s+(.+?)\s+(?:is\s+)?(?:available|in stock).*$",
+                msg_lower
+            )
+            if avail_match:
+                med_name = avail_match.group(1).strip()
+                print(f"[ORCH] Fast availability: '{med_name}'")
+                fake_result = AgentResponse(
+                    success=True,
+                    data={"intent": "check_availability", "entities": {"medicine_name": med_name}},
+                    message=""
+                )
+                return await self._check_availability(fake_result, context, trace)
+            
+            # Pattern: "I want to refill <medicine>" (from refill alert clicks)
+            refill_match = re.match(
+                r"^(?:i want to refill|refill)\s+(.+?)\.?$",
+                msg_lower
+            )
+            if refill_match:
+                med_name = refill_match.group(1).strip()
+                print(f"[ORCH] Fast refill with name: '{med_name}'")
+                fake_result = AgentResponse(
+                    success=True,
+                    data={"intent": "order_medicine", "entities": {"medicine_name": med_name}},
+                    message=""
+                )
+                return await self._process_order_flow(fake_result, context, trace)
+            
+            # ═══════════════════════════════════════════════════════════
             # PRIORITY 3: Handle image uploads (prescription)
             # ═══════════════════════════════════════════════════════════
             if image_data:
@@ -231,7 +326,53 @@ class OrchestratorAgent(BaseAgent):
                 return self._build_response(response, context, trace, conv_result.data)
             
             # Step 3: Process order-related intents through safety
-            if intent in ["order_medicine", "refill_prescription"]:
+            if intent == "refill_prescription":
+                # ═══════════════════════════════════════════════════════════
+                # REFILL AUTO-DETECTION: Find most recent refill-eligible
+                # medicine from order history before asking user to specify
+                # ═══════════════════════════════════════════════════════════
+                medicine_name = conv_result.data.get("entities", {}).get("medicine_name")
+                if not medicine_name and context.customer_id:
+                    refill_medicine = self._get_refill_medicine(context.customer_id)
+                    if refill_medicine:
+                        # Found a refill-eligible medicine — ask for confirmation
+                        med_name = refill_medicine.get("name", "your medicine")
+                        print(f"[ORCH] Auto-detected refill medicine: {med_name}")
+                        
+                        # Build a complete pending order with all fields ExecutorAgent expects
+                        unit_price = float(refill_medicine.get("unit_price", 0))
+                        context.pending_order = {
+                            "order_id": f"ORD{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+                            "customer_id": context.customer_id,
+                            "medicine": refill_medicine,
+                            "medicine_id": refill_medicine.get("medicine_id", ""),
+                            "medicine_name": med_name,
+                            "quantity": 1,
+                            "unit_price": unit_price,
+                            "total": unit_price * 1,
+                            "dosage_form": refill_medicine.get("dosage_form", ""),
+                            "prescription_required": refill_medicine.get("prescription_required", "false"),
+                            "prescription_verified": True,
+                            "auto_refill": True
+                        }
+                        context.set_entity("last_medicine", refill_medicine)
+                        
+                        return self._build_response(
+                            f"Would you like to refill **{med_name}**?",
+                            context, trace,
+                            {"status": "awaiting_confirmation", "medicine": refill_medicine, "auto_refill": True}
+                        )
+                    else:
+                        # No refill-eligible medicine found — ask user to specify
+                        return self._build_response(
+                            "I couldn't find a recent prescription in your history. Please specify which medicine you'd like to order.",
+                            context, trace,
+                            {"status": "no_refill_history"}
+                        )
+                # If medicine_name was extracted from the message, proceed with normal order flow
+                return await self._process_order_flow(conv_result, context, trace)
+            
+            if intent == "order_medicine":
                 return await self._process_order_flow(conv_result, context, trace)
             
             # Step 4: Check availability
@@ -813,8 +954,73 @@ class OrchestratorAgent(BaseAgent):
             {"status": "cancelled", "cart_cleared": True}
         )
     
+    def _get_refill_medicine(self, customer_id: str) -> Optional[Dict]:
+        """Find most recent refill-eligible medicine from order history."""
+        try:
+            order_history_path = Path(__file__).parent.parent / "data" / "order_history.csv"
+            medicines_path = Path(__file__).parent.parent / "data" / "medicines.csv"
+            
+            if not order_history_path.exists() or not medicines_path.exists():
+                return None
+            
+            # Load order history for this customer
+            customer_orders = []
+            with open(order_history_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row.get("customer_id") == customer_id:
+                        customer_orders.append(row)
+            
+            if not customer_orders:
+                return None
+            
+            # Load medicines
+            medicines = {}
+            with open(medicines_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    medicines[row["medicine_id"]] = row
+            
+            # Prefer prescription-required medicines, then sort by order date descending
+            def sort_key(order):
+                med = medicines.get(order.get("medicine_id"), {})
+                is_rx = 1 if med.get("prescription_required", "false").lower() == "true" else 0
+                order_date = order.get("order_date", "1900-01-01")
+                return (is_rx, order_date)
+            
+            customer_orders.sort(key=sort_key, reverse=True)
+            best_order = customer_orders[0]
+            med_id = best_order.get("medicine_id")
+            
+            if med_id and med_id in medicines:
+                return medicines[med_id]
+            
+            return None
+        except Exception as e:
+            print(f"[ORCH] Error finding refill medicine: {e}")
+            return None
+    
+    @staticmethod
+    def _parse_dosage_frequency(freq: str) -> Optional[int]:
+        """Parse dosage frequency string to daily doses count."""
+        if not freq:
+            return None
+        freq_lower = freq.strip().lower()
+        FREQ_MAP = {
+            "once daily": 1,
+            "twice daily": 2,
+            "three times daily": 3,
+            "thrice daily": 3,
+        }
+        for key, val in FREQ_MAP.items():
+            if key in freq_lower:
+                return val
+        if "as needed" in freq_lower:
+            return None  # Cannot estimate for as-needed
+        return None
+
     async def get_refill_alerts(self, customer_id: Optional[str] = None) -> Dict[str, Any]:
-        """Get proactive refill alerts."""
+        """Get proactive refill alerts with enriched days_left data."""
         context = AgentContext(customer_id=customer_id)
         
         trace = self.tracer.create_trace(
@@ -829,9 +1035,28 @@ class OrchestratorAgent(BaseAgent):
             trace=trace
         )
         
+        # Enrich alerts with computed days_left
+        alerts = result.data.get("predictions", [])
+        for alert in alerts:
+            try:
+                quantity = alert.get("days_supply")
+                frequency = alert.get("frequency", "")
+                daily_dosage = self._parse_dosage_frequency(frequency)
+                
+                if daily_dosage and quantity and str(quantity) not in ("N/A", "", "None"):
+                    days_left = int(quantity) // daily_dosage
+                    alert["days_left"] = days_left
+                    alert["priority"] = "high" if days_left < 5 else "medium"
+                else:
+                    alert["days_left"] = None
+                    alert["priority"] = alert.get("priority", "medium")
+            except (ValueError, TypeError, ZeroDivisionError):
+                alert["days_left"] = None
+                alert["priority"] = alert.get("priority", "medium")
+        
         return {
             "success": result.success,
-            "alerts": result.data.get("predictions", []),
+            "alerts": alerts,
             "message": result.message
         }
     
