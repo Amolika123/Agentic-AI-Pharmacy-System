@@ -561,7 +561,7 @@ function Chat({ customerId, onCartUpdate }) {
                                 <div key={idx} className={`alert-item ${alert.priority || 'medium'}`} onClick={() => handleRefill(alert)}>
                                     <div className="alert-title">{alert.medicine_name}</div>
                                     <div className="alert-body">
-                                        {t('sidebar.runningLow')} ({alert.days_left} {t('sidebar.daysLeft')})
+                                        {t('sidebar.runningLow')}{alert.days_left != null && ` (${alert.days_left} ${t('sidebar.daysLeft')})`}
                                     </div>
                                     <div className="alert-actions">
                                         <button className="alert-action-btn">{t('sidebar.refillNow')}</button>
