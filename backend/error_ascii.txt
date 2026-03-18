@@ -1,0 +1,60 @@
+..\.venv\Scripts\python
+ : Traceback (most 
+recent call last):
+At line:1 char:1
++ ..\.venv\Scripts\pyth
+on api\main.py 2> 
+error_output.txt
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Traceback (mo   
+ st recent call las    
+t)::String) [], Re    
+moteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+  File "C:\Users\amoli\
+OneDrive\Desktop\Pharma
+cy_Demo2\backend\api\ma
+in.py", line 17, in 
+<module>
+    from 
+agents.orchestrator 
+import 
+orchestrator_agent
+  File "C:\Users\amoli\
+OneDrive\Desktop\Pharma
+cy_Demo2\backend\agents
+\__init__.py", line 4, 
+in <module>
+    from 
+agents.base_agent 
+import BaseAgent, 
+AgentResponse, 
+AgentContext
+  File "C:\Users\amoli\
+OneDrive\Desktop\Pharma
+cy_Demo2\backend\agents
+\base_agent.py", line 
+24, in <module>
+    class AgentContext:
+    ...<33 lines>...
+            }
+  File "C:\Users\amoli\
+OneDrive\Desktop\Pharma
+cy_Demo2\backend\agents
+\base_agent.py", line 
+35, in AgentContext
+    order_state: 
+OrderState = 
+OrderState.NONE
+                       
+       ^^^^^^^^^^^^^^^
+AttributeError: type 
+object 'OrderState' 
+has no attribute 'NONE'

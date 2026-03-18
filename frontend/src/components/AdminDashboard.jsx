@@ -157,12 +157,12 @@ function AdminDashboard({ systemStatus }) {
 
     // Tab definitions - PharmAgent spec order
     const tabs = [
-        { id: 'overview', icon: '📊', label: 'Overview' },
-        { id: 'orders', icon: '📦', label: 'Orders' },
-        { id: 'inventory', icon: '💊', label: 'Inventory' },
-        { id: 'patients', icon: '👥', label: 'Patients' },
-        { id: 'observability', icon: '🔍', label: 'Traces' },
-        { id: 'settings', icon: '⚙️', label: 'Settings' }
+        { id: 'overview', icon: '📊', label: t('admin.tabOverview') },
+        { id: 'orders', icon: '📦', label: t('admin.tabOrders') },
+        { id: 'inventory', icon: '💊', label: t('admin.tabInventory') },
+        { id: 'patients', icon: '👥', label: t('admin.tabPatients') },
+        { id: 'observability', icon: '🔍', label: t('admin.tabTraces') },
+        { id: 'settings', icon: '⚙️', label: t('admin.tabSettings') }
     ]
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -172,10 +172,10 @@ function AdminDashboard({ systemStatus }) {
     const renderPatientsTab = () => (
         <div className="admin-content-view">
             <div className="content-header">
-                <h1>👥 Patients</h1>
+                <h1>👥 {t('admin.patients')}</h1>
                 <div className="content-stats">
-                    <span className="stat-chip">{customers.length} Total</span>
-                    <span className="stat-chip highlight">{filteredCustomers.length} Showing</span>
+                    <span className="stat-chip">{customers.length} {t('admin.total')}</span>
+                    <span className="stat-chip highlight">{filteredCustomers.length} {t('admin.showing')}</span>
                 </div>
             </div>
 
@@ -184,7 +184,7 @@ function AdminDashboard({ systemStatus }) {
                     <span className="search-icon">🔍</span>
                     <input
                         type="text"
-                        placeholder="Search by name, email, or ID..."
+                        placeholder={t('admin.searchPlaceholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="search-input"
@@ -195,7 +195,7 @@ function AdminDashboard({ systemStatus }) {
                     onChange={(e) => setFilterCondition(e.target.value)}
                     className="filter-select"
                 >
-                    <option value="">All Conditions</option>
+                    <option value="">{t('admin.allConditions')}</option>
                     {allConditions.map((condition, idx) => (
                         <option key={idx} value={condition}>{condition}</option>
                     ))}
@@ -206,13 +206,13 @@ function AdminDashboard({ systemStatus }) {
                 <table className="content-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Chronic Conditions</th>
-                            <th>Allergies</th>
-                            <th>Registered</th>
-                            <th>Actions</th>
+                            <th>{t('admin.id')}</th>
+                            <th>{t('admin.name')}</th>
+                            <th>{t('admin.email')}</th>
+                            <th>{t('admin.chronicConditions')}</th>
+                            <th>{t('admin.allergies')}</th>
+                            <th>{t('admin.registered')}</th>
+                            <th>{t('admin.actions')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -230,7 +230,7 @@ function AdminDashboard({ systemStatus }) {
                                             <span className="tag more">+{parseListField(customer.chronic_conditions).length - 2}</span>
                                         )}
                                         {parseListField(customer.chronic_conditions).length === 0 && (
-                                            <span className="no-data">None</span>
+                                            <span className="no-data">{t('admin.none')}</span>
                                         )}
                                     </div>
                                 </td>
@@ -240,14 +240,14 @@ function AdminDashboard({ systemStatus }) {
                                             <span key={i} className="tag allergy">{allergy}</span>
                                         ))}
                                         {parseListField(customer.allergies).length === 0 && (
-                                            <span className="no-data">None</span>
+                                            <span className="no-data">{t('admin.none')}</span>
                                         )}
                                     </div>
                                 </td>
                                 <td className="table-date">{customer.registered_date}</td>
                                 <td>
                                     <button className="action-btn" onClick={(e) => { e.stopPropagation(); openPatientModal(customer) }}>
-                                        View
+                                        {t('admin.view')}
                                     </button>
                                 </td>
                             </tr>
@@ -255,7 +255,7 @@ function AdminDashboard({ systemStatus }) {
                     </tbody>
                 </table>
                 {filteredCustomers.length === 0 && (
-                    <div className="no-results">No patients match your search criteria</div>
+                    <div className="no-results">{t('admin.noPatientsMatch')}</div>
                 )}
             </div>
         </div>
@@ -264,10 +264,10 @@ function AdminDashboard({ systemStatus }) {
     const renderOrdersTab = () => (
         <div className="admin-content-view">
             <div className="content-header">
-                <h1>📦 Orders</h1>
+                <h1>📦 {t('admin.orders')}</h1>
                 <div className="content-stats">
-                    <span className="stat-chip">{orders.length} Total</span>
-                    <span className="stat-chip highlight">{filteredOrders.length} Showing</span>
+                    <span className="stat-chip">{orders.length} {t('admin.total')}</span>
+                    <span className="stat-chip highlight">{filteredOrders.length} {t('admin.showing')}</span>
                 </div>
             </div>
 
@@ -277,11 +277,11 @@ function AdminDashboard({ systemStatus }) {
                     onChange={(e) => setOrderStatusFilter(e.target.value)}
                     className="filter-select"
                 >
-                    <option value="">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
+                    <option value="">{t('admin.allStatus')}</option>
+                    <option value="pending">{t('admin.pending')}</option>
+                    <option value="confirmed">{t('admin.confirmed')}</option>
+                    <option value="completed">{t('admin.completed')}</option>
+                    <option value="cancelled">{t('admin.cancelled')}</option>
                 </select>
             </div>
 
@@ -291,7 +291,7 @@ function AdminDashboard({ systemStatus }) {
                         <div className="order-main">
                             <div className="order-id">{order.order_id || `Order ${idx + 1}`}</div>
                             <div className="order-medicine">{order.medicine_name}</div>
-                            <div className="order-qty">Qty: {order.quantity}</div>
+                            <div className="order-qty">{t('admin.qty')}: {order.quantity}</div>
                         </div>
                         <div className="order-meta">
                             <span className="order-customer">{order.customer_id}</span>
@@ -299,7 +299,7 @@ function AdminDashboard({ systemStatus }) {
                         </div>
                     </div>
                 )) : (
-                    <div className="no-results">No orders found</div>
+                    <div className="no-results">{t('admin.noOrdersFound')}</div>
                 )}
             </div>
         </div>
@@ -308,11 +308,11 @@ function AdminDashboard({ systemStatus }) {
     const renderInventoryTab = () => (
         <div className="admin-content-view">
             <div className="content-header">
-                <h1>💊 Inventory</h1>
+                <h1>💊 {t('admin.inventory')}</h1>
                 <div className="content-stats">
-                    <span className="stat-chip">{inventory.length} Items</span>
+                    <span className="stat-chip">{inventory.length} {t('admin.items')}</span>
                     <span className={`stat-chip ${lowStockItems.length > 0 ? 'warning' : 'success'}`}>
-                        {lowStockItems.length} Low Stock
+                        {lowStockItems.length} {t('admin.lowStock')}
                     </span>
                 </div>
             </div>
@@ -335,7 +335,7 @@ function AdminDashboard({ systemStatus }) {
                         </div>
                         <div className="inv-footer">
                             <span className="inv-price">₹{item.unit_price || item.price}</span>
-                            <button className="edit-btn" onClick={() => openEditModal(item)}>✏️ Edit</button>
+                            <button className="edit-btn" onClick={() => openEditModal(item)}>✏️ {t('admin.edit')}</button>
                         </div>
                     </div>
                 ))}
@@ -346,9 +346,9 @@ function AdminDashboard({ systemStatus }) {
     const renderObservabilityTab = () => (
         <div className="admin-content-view">
             <div className="content-header">
-                <h1>🔍 Observability & Agent Traces</h1>
+                <h1>🔍 {t('admin.observability')}</h1>
                 <div className="content-stats">
-                    <span className="stat-chip">{traces.length} Traces</span>
+                    <span className="stat-chip">{traces.length} {t('admin.traces')}</span>
                     {systemStatus?.observability?.langfuse && (
                         <a
                             href="https://cloud.langfuse.com"
@@ -356,7 +356,7 @@ function AdminDashboard({ systemStatus }) {
                             rel="noopener noreferrer"
                             className="langfuse-btn"
                         >
-                            Open Langfuse →
+                            {t('admin.openLangfuse')}
                         </a>
                     )}
                 </div>
@@ -370,17 +370,17 @@ function AdminDashboard({ systemStatus }) {
                             <div className="trace-time">{formatTraceTime(trace.timestamp)}</div>
                         </div>
                         <div className="trace-center">
-                            <div className="trace-agent">{trace.name || 'Unknown Agent'}</div>
+                            <div className="trace-agent">{trace.name || t('admin.unknownAgent')}</div>
                             <div className="trace-details">
-                                {trace.decisions?.length || 0} decisions
+                                {trace.decisions?.length || 0} {t('admin.decisions')}
                             </div>
                         </div>
                         <div className="trace-right">
-                            {idx === 0 && <span className="trace-badge">Latest</span>}
+                            {idx === 0 && <span className="trace-badge">{t('admin.latest')}</span>}
                         </div>
                     </div>
                 )) : (
-                    <div className="no-results">No traces captured yet. Interact with the pharmacy assistant to generate traces.</div>
+                    <div className="no-results">{t('admin.noTraces')}</div>
                 )}
             </div>
         </div>
@@ -389,17 +389,17 @@ function AdminDashboard({ systemStatus }) {
     const renderHealthTab = () => (
         <div className="admin-content-view">
             <div className="content-header">
-                <h1>⚙️ System Health</h1>
+                <h1>⚙️ {t('admin.systemHealth')}</h1>
                 <div className="content-stats">
                     <span className={`stat-chip ${systemStatus?.status === 'operational' ? 'success' : 'warning'}`}>
-                        {systemStatus?.status || 'Loading...'}
+                        {systemStatus?.status || t('admin.loading')}
                     </span>
                 </div>
             </div>
 
             <div className="health-sections">
                 <div className="health-section">
-                    <h3>Agents</h3>
+                    <h3>{t('admin.agents')}</h3>
                     <div className="health-grid">
                         {systemStatus?.agents && Object.entries(systemStatus.agents).map(([agent, status]) => (
                             <div key={agent} className="health-card">
@@ -411,33 +411,33 @@ function AdminDashboard({ systemStatus }) {
                 </div>
 
                 <div className="health-section">
-                    <h3>Connections</h3>
+                    <h3>{t('admin.connections')}</h3>
                     <div className="health-grid">
                         <div className="health-card">
-                            <div className="health-name">Ollama LLM</div>
+                            <div className="health-name">{t('admin.ollamaLlm')}</div>
                             <div className={`health-status ${systemStatus?.ollama?.available ? 'active' : 'inactive'}`}>
-                                ● {systemStatus?.ollama?.available ? `Connected (${systemStatus?.ollama?.model})` : 'Offline'}
+                                ● {systemStatus?.ollama?.available ? `${t('admin.connected')} (${systemStatus?.ollama?.model})` : t('admin.offline')}
                             </div>
                         </div>
                         <div className="health-card">
-                            <div className="health-name">Langfuse Tracing</div>
+                            <div className="health-name">{t('admin.langfuseTracing')}</div>
                             <div className={`health-status ${systemStatus?.observability?.langfuse ? 'active' : ''}`}>
-                                ● {systemStatus?.observability?.langfuse ? 'Enabled' : 'Mock Mode'}
+                                ● {systemStatus?.observability?.langfuse ? t('admin.enabled') : t('admin.mockMode')}
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="health-section">
-                    <h3>Proactive Refill Alerts</h3>
+                    <h3>{t('admin.proactiveRefillAlerts')}</h3>
                     <div className="health-card wide">
-                        <div className="health-name">{alerts.length} customers need refills</div>
+                        <div className="health-name">{alerts.length} {t('admin.customersNeedRefills')}</div>
                         {alerts.slice(0, 5).map((alert, idx) => (
                             <div key={idx} className="alert-row">
                                 <span>{alert.customer_name}</span>
                                 <span className="alert-med">{alert.medicine_name}</span>
                                 <span className={`alert-days ${alert.days_until_refill <= 0 ? 'overdue' : ''}`}>
-                                    {alert.days_until_refill <= 0 ? 'Overdue' : `${alert.days_until_refill} days`}
+                                    {alert.days_until_refill <= 0 ? t('admin.overdue') : `${alert.days_until_refill} ${t('admin.days')}`}
                                 </span>
                             </div>
                         ))}
@@ -459,10 +459,10 @@ function AdminDashboard({ systemStatus }) {
         return (
             <div className="admin-content-view">
                 <div className="content-header">
-                    <h1>📊 Overview</h1>
+                    <h1>📊 {t('admin.overview')}</h1>
                     <div className="content-stats">
                         <span className={`stat-chip ${systemStatus?.status === 'operational' ? 'success' : 'warning'}`}>
-                            {systemStatus?.status || 'Loading...'}
+                            {systemStatus?.status || t('admin.loading')}
                         </span>
                     </div>
                 </div>
@@ -471,75 +471,75 @@ function AdminDashboard({ systemStatus }) {
                     <div className="overview-card">
                         <div className="overview-icon">👥</div>
                         <div className="overview-value">{customers.length}</div>
-                        <div className="overview-label">Total Patients</div>
+                        <div className="overview-label">{t('admin.totalPatients')}</div>
                     </div>
                     <div className="overview-card">
                         <div className="overview-icon">📦</div>
                         <div className="overview-value">{orders.length}</div>
-                        <div className="overview-label">Total Orders</div>
+                        <div className="overview-label">{t('admin.totalOrders')}</div>
                     </div>
                     <div className="overview-card highlight">
                         <div className="overview-icon">⏳</div>
                         <div className="overview-value">{pendingOrders}</div>
-                        <div className="overview-label">Pending Orders</div>
+                        <div className="overview-label">{t('admin.pendingOrders')}</div>
                     </div>
                     <div className={`overview-card ${lowStockItems.length > 0 ? 'warning' : ''}`}>
                         <div className="overview-icon">⚠️</div>
                         <div className="overview-value">{lowStockItems.length}</div>
-                        <div className="overview-label">Low Stock Items</div>
+                        <div className="overview-label">{t('admin.lowStockItems')}</div>
                     </div>
                 </div>
 
                 <div className="overview-sections">
                     <div className="overview-section">
-                        <h3>Order Summary</h3>
+                        <h3>{t('admin.orderSummary')}</h3>
                         <div className="summary-row">
-                            <span>Pending</span>
+                            <span>{t('admin.pending')}</span>
                             <span className="summary-value pending">{pendingOrders}</span>
                         </div>
                         <div className="summary-row">
-                            <span>Confirmed</span>
+                            <span>{t('admin.confirmed')}</span>
                             <span className="summary-value confirmed">{confirmedOrders}</span>
                         </div>
                         <div className="summary-row">
-                            <span>Completed</span>
+                            <span>{t('admin.completed')}</span>
                             <span className="summary-value completed">{completedOrders}</span>
                         </div>
                     </div>
 
                     <div className="overview-section">
-                        <h3>System Status</h3>
+                        <h3>{t('admin.systemStatusLabel')}</h3>
                         <div className="summary-row">
-                            <span>LLM Connection</span>
+                            <span>{t('admin.llmConnection')}</span>
                             <span className={`summary-status ${systemStatus?.ollama?.available ? 'active' : 'inactive'}`}>
-                                {systemStatus?.ollama?.available ? 'Connected' : 'Offline'}
+                                {systemStatus?.ollama?.available ? t('admin.connected') : t('admin.offline')}
                             </span>
                         </div>
                         <div className="summary-row">
-                            <span>Observability</span>
+                            <span>{t('admin.observabilityLabel')}</span>
                             <span className="summary-status active">
                                 {systemStatus?.observability?.langfuse ? 'Langfuse' : 'Mock'}
                             </span>
                         </div>
                         <div className="summary-row">
-                            <span>Active Traces</span>
+                            <span>{t('admin.activeTraces')}</span>
                             <span className="summary-value">{traces.length}</span>
                         </div>
                     </div>
 
                     <div className="overview-section">
-                        <h3>Refill Alerts</h3>
+                        <h3>{t('admin.refillAlerts')}</h3>
                         {alerts.length > 0 ? (
                             alerts.slice(0, 4).map((alert, idx) => (
                                 <div key={idx} className="summary-row">
                                     <span>{alert.customer_name}</span>
                                     <span className={`summary-status ${alert.days_until_refill <= 0 ? 'warning' : ''}`}>
-                                        {alert.days_until_refill <= 0 ? 'Overdue' : `${alert.days_until_refill}d`}
+                                        {alert.days_until_refill <= 0 ? t('admin.overdue') : `${alert.days_until_refill}d`}
                                     </span>
                                 </div>
                             ))
                         ) : (
-                            <div className="empty-state">No refill alerts</div>
+                            <div className="empty-state">{t('admin.noRefillAlerts')}</div>
                         )}
                     </div>
                 </div>
@@ -555,14 +555,14 @@ function AdminDashboard({ systemStatus }) {
     const [showDangerConfirm, setShowDangerConfirm] = useState(null)
 
     const adminSettingsSections = [
-        { id: 'organization', icon: '🏥', label: 'Organization' },
-        { id: 'users', icon: '👥', label: 'Users & Roles' },
-        { id: 'safety', icon: '🛡️', label: 'Safety & Policy' },
-        { id: 'agents', icon: '🤖', label: 'Agent Config' },
-        { id: 'observability', icon: '📊', label: 'Observability' },
-        { id: 'inventory', icon: '📦', label: 'Inventory Rules' },
-        { id: 'compliance', icon: '📋', label: 'Compliance' },
-        { id: 'danger', icon: '⚠️', label: 'Danger Zone' }
+        { id: 'organization', icon: '🏥', label: t('admin.organization') },
+        { id: 'users', icon: '👥', label: t('admin.usersAndRoles') },
+        { id: 'safety', icon: '🛡️', label: t('admin.safetyAndPolicy') },
+        { id: 'agents', icon: '🤖', label: t('admin.agentConfig') },
+        { id: 'observability', icon: '📊', label: t('admin.observabilityLabel') },
+        { id: 'inventory', icon: '📦', label: t('admin.inventoryRules') },
+        { id: 'compliance', icon: '📋', label: t('admin.compliance') },
+        { id: 'danger', icon: '⚠️', label: t('admin.dangerZone') }
     ]
 
     const renderSettingsTab = () => (
@@ -586,43 +586,43 @@ function AdminDashboard({ systemStatus }) {
                 {settingsSection === 'organization' && (
                     <div className="settings-panel">
                         <div className="settings-panel-header">
-                            <h2>🏥 Organization Settings</h2>
-                            <p>Configure your pharmacy's basic information</p>
+                            <h2>🏥 {t('admin.organizationSettings')}</h2>
+                            <p>{t('admin.configurePharmacy')}</p>
                         </div>
                         <div className="settings-sections">
                             <div className="settings-section">
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Pharmacy Name</span>
-                                        <span className="settings-description">Official business name</span>
+                                        <span className="settings-label">{t('admin.pharmacyName')}</span>
+                                        <span className="settings-description">{t('admin.officialBusinessName')}</span>
                                     </div>
                                     <span className="settings-value">PharmAgent Demo Pharmacy</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Address</span>
-                                        <span className="settings-description">Physical location</span>
+                                        <span className="settings-label">{t('admin.addressLabel')}</span>
+                                        <span className="settings-description">{t('admin.physicalLocation')}</span>
                                     </div>
                                     <span className="settings-value">123 Health Street, Medical City</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Operating Hours</span>
-                                        <span className="settings-description">Business hours</span>
+                                        <span className="settings-label">{t('admin.operatingHours')}</span>
+                                        <span className="settings-description">{t('admin.businessHours')}</span>
                                     </div>
                                     <span className="settings-value">9:00 AM - 9:00 PM</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Timezone</span>
-                                        <span className="settings-description">System timezone</span>
+                                        <span className="settings-label">{t('admin.timezone')}</span>
+                                        <span className="settings-description">{t('admin.systemTimezone')}</span>
                                     </div>
                                     <span className="settings-value">Asia/Kolkata (IST)</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Default Language</span>
-                                        <span className="settings-description">Primary AI language</span>
+                                        <span className="settings-label">{t('admin.defaultLanguage')}</span>
+                                        <span className="settings-description">{t('admin.primaryAiLanguage')}</span>
                                     </div>
                                     <span className="settings-value">English</span>
                                 </div>
@@ -634,8 +634,8 @@ function AdminDashboard({ systemStatus }) {
                 {settingsSection === 'users' && (
                     <div className="settings-panel">
                         <div className="settings-panel-header">
-                            <h2>👥 User & Role Management</h2>
-                            <p>Manage admin users and their permissions</p>
+                            <h2>👥 {t('admin.userRoleManagement')}</h2>
+                            <p>{t('admin.manageAdminUsers')}</p>
                         </div>
                         <div className="admin-users-list">
                             <div className="admin-user-card">
@@ -657,49 +657,49 @@ function AdminDashboard({ systemStatus }) {
                                 <span className="user-status active">Active</span>
                             </div>
                         </div>
-                        <p className="settings-note">Role changes require verification. Admins cannot modify their own role.</p>
+                        <p className="settings-note">{t('admin.roleChangeNote')}</p>
                     </div>
                 )}
 
                 {settingsSection === 'safety' && (
                     <div className="settings-panel">
                         <div className="settings-panel-header">
-                            <h2>🛡️ Safety & Policy Rules</h2>
-                            <p>Configure medication safety and ordering policies</p>
+                            <h2>🛡️ {t('admin.safetyPolicyRules')}</h2>
+                            <p>{t('admin.configureSafety')}</p>
                         </div>
                         <div className="settings-sections">
                             <div className="settings-section">
-                                <h3>Order Policies</h3>
+                                <h3>{t('admin.orderPolicies')}</h3>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Max Order Quantity</span>
-                                        <span className="settings-description">Maximum items per order</span>
+                                        <span className="settings-label">{t('admin.maxOrderQuantity')}</span>
+                                        <span className="settings-description">{t('admin.maxItemsPerOrder')}</span>
                                     </div>
                                     <span className="settings-value">10 units</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Prescription Validation</span>
-                                        <span className="settings-description">Require prescription for Rx medicines</span>
+                                        <span className="settings-label">{t('admin.prescriptionValidation')}</span>
+                                        <span className="settings-description">{t('admin.requirePrescription')}</span>
                                     </div>
-                                    <span className="settings-badge enabled">Enforced</span>
+                                    <span className="settings-badge enabled">{t('admin.enforced')}</span>
                                 </div>
                             </div>
                             <div className="settings-section">
-                                <h3>Safety Enforcement</h3>
+                                <h3>{t('admin.safetyEnforcement')}</h3>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Allergy Blocking</span>
-                                        <span className="settings-description">Block orders with known allergies</span>
+                                        <span className="settings-label">{t('admin.allergyBlocking')}</span>
+                                        <span className="settings-description">{t('admin.blockAllergyOrders')}</span>
                                     </div>
-                                    <span className="settings-badge enabled">Hard Block</span>
+                                    <span className="settings-badge enabled">{t('admin.hardBlock')}</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Drug Interaction Checks</span>
-                                        <span className="settings-description">Check for dangerous interactions</span>
+                                        <span className="settings-label">{t('admin.drugInteractionChecks')}</span>
+                                        <span className="settings-description">{t('admin.checkDangerousInteractions')}</span>
                                     </div>
-                                    <span className="settings-badge enabled">Enabled</span>
+                                    <span className="settings-badge enabled">{t('admin.enabled')}</span>
                                 </div>
                             </div>
                         </div>
@@ -709,88 +709,88 @@ function AdminDashboard({ systemStatus }) {
                 {settingsSection === 'agents' && (
                     <div className="settings-panel">
                         <div className="settings-panel-header">
-                            <h2>🤖 Agent Configuration</h2>
-                            <p>Control AI agent behavior (high-level only)</p>
+                            <h2>🤖 {t('admin.agentConfiguration')}</h2>
+                            <p>{t('admin.controlAgentBehavior')}</p>
                         </div>
                         <div className="settings-sections">
                             <div className="settings-section">
-                                <h3>Agent Status</h3>
+                                <h3>{t('admin.agentStatus')}</h3>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Safety Agent</span>
-                                        <span className="settings-description">Drug interaction & allergy validation</span>
+                                        <span className="settings-label">{t('admin.safetyAgent')}</span>
+                                        <span className="settings-description">{t('admin.safetyAgentDesc')}</span>
                                     </div>
                                     <span className="settings-badge enabled">Enabled</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Refill Agent</span>
-                                        <span className="settings-description">Proactive refill predictions</span>
+                                        <span className="settings-label">{t('admin.refillAgent')}</span>
+                                        <span className="settings-description">{t('admin.refillAgentDesc')}</span>
                                     </div>
                                     <span className="settings-badge enabled">Enabled</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Vision Agent</span>
-                                        <span className="settings-description">Prescription image processing</span>
+                                        <span className="settings-label">{t('admin.visionAgent')}</span>
+                                        <span className="settings-description">{t('admin.visionAgentDesc')}</span>
                                     </div>
                                     <span className="settings-badge enabled">Enabled</span>
                                 </div>
                             </div>
                             <div className="settings-section">
-                                <h3>Execution Mode</h3>
+                                <h3>{t('admin.executionMode')}</h3>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Operation Mode</span>
-                                        <span className="settings-description">How agents handle decisions</span>
+                                        <span className="settings-label">{t('admin.operationMode')}</span>
+                                        <span className="settings-description">{t('admin.howAgentsHandle')}</span>
                                     </div>
                                     <span className="settings-value">Strict (Confirm All)</span>
                                 </div>
                             </div>
                         </div>
-                        <p className="settings-note">Prompt editing is not available in this interface for safety reasons.</p>
+                        <p className="settings-note">{t('admin.promptEditNote')}</p>
                     </div>
                 )}
 
                 {settingsSection === 'observability' && (
                     <div className="settings-panel">
                         <div className="settings-panel-header">
-                            <h2>📊 Observability Settings</h2>
-                            <p>Configure tracing and logging</p>
+                            <h2>📊 {t('admin.observabilitySettings')}</h2>
+                            <p>{t('admin.configureTracing')}</p>
                         </div>
                         <div className="settings-sections">
                             <div className="settings-section">
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Trace Logging</span>
-                                        <span className="settings-description">Record agent decisions</span>
+                                        <span className="settings-label">{t('admin.traceLogging')}</span>
+                                        <span className="settings-description">{t('admin.recordAgentDecisions')}</span>
                                     </div>
-                                    <span className="settings-badge enabled">Enabled</span>
+                                    <span className="settings-badge enabled">{t('admin.enabled')}</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Tracing Provider</span>
-                                        <span className="settings-description">Current logging backend</span>
+                                        <span className="settings-label">{t('admin.tracingProvider')}</span>
+                                        <span className="settings-description">{t('admin.currentLoggingBackend')}</span>
                                     </div>
-                                    <span className="settings-value">{systemStatus?.observability?.langfuse ? 'Langfuse' : 'Local Mock'}</span>
+                                    <span className="settings-value">{systemStatus?.observability?.langfuse ? 'Langfuse' : t('admin.localMock')}</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Trace Retention</span>
-                                        <span className="settings-description">How long traces are kept</span>
+                                        <span className="settings-label">{t('admin.traceRetention')}</span>
+                                        <span className="settings-description">{t('admin.howLongTracesKept')}</span>
                                     </div>
                                     <span className="settings-value">30 days</span>
                                 </div>
                                 <div className="settings-item">
                                     <div className="settings-info">
-                                        <span className="settings-label">Mask Patient Identifiers</span>
-                                        <span className="settings-description">Anonymize PII in logs</span>
+                                        <span className="settings-label">{t('admin.maskPatientIdentifiers')}</span>
+                                        <span className="settings-description">{t('admin.anonymizePii')}</span>
                                     </div>
-                                    <span className="settings-badge enabled">Enabled</span>
+                                    <span className="settings-badge enabled">{t('admin.enabled')}</span>
                                 </div>
                             </div>
                         </div>
-                        <button className="secondary-btn">📥 Export Traces (Admin Only)</button>
+                        <button className="secondary-btn">{t('admin.exportTraces')}</button>
                     </div>
                 )}
 
