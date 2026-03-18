@@ -1,0 +1,49 @@
+..\.venv\Scripts\python
+ : Traceback (most 
+recent call last):
+At line:1 char:1
++ ..\.venv\Scripts\pyth
+on api\main.py > 
+error_output2.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Traceback (mo   
+ st recent call las    
+t)::String) [], Re    
+moteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+  File "C:\Users\amoli\
+OneDrive\Desktop\Pharma
+cy_Demo2\backend\api\ma
+in.py", line 17, in 
+<module>
+    from 
+agents.orchestrator 
+import 
+orchestrator_agent
+  File "C:\Users\amoli\
+OneDrive\Desktop\Pharma
+cy_Demo2\backend\agents
+\__init__.py", line 5, 
+in <module>
+    from 
+agents.orchestrator 
+import 
+orchestrator_agent
+  File "C:\Users\amoli\
+OneDrive\Desktop\Pharma
+cy_Demo2\backend\agents
+\orchestrator.py", 
+line 6, in <module>
+    from backend.servic
+es.audit_logger import 
+audit_logger
+ModuleNotFoundError: 
+No module named 
+'backend'
