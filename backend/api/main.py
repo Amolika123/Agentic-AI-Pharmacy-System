@@ -3,6 +3,7 @@ FastAPI Main Application - Agentic Pharmacy System.
 Uses local Ollama llama3.2-vision - NO API KEYS REQUIRED.
 """
 import sys
+import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -13,6 +14,16 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import csv
+import razorpay
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(Path(__file__).parent.parent / ".env")
+
+# Initialize Razorpay client (test mode)
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 from agents.orchestrator import orchestrator_agent
 from agents.predictive import predictive_agent
@@ -708,6 +719,111 @@ async def list_policies():
             policies = list(reader)
     
     return {"success": True, "policies": policies}
+
+
+# ============ Payment (Razorpay) ============
+
+class PaymentCreateRequest(BaseModel):
+    amount: float
+    order_id: Optional[str] = None
+
+
+class PaymentVerifyRequest(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+    customer_id: str
+    items: List[Dict[str, Any]] = []
+
+
+@app.post("/api/v1/payment/create-order")
+async def create_razorpay_order(request: PaymentCreateRequest):
+    """Create a Razorpay order for payment processing (test mode)."""
+    try:
+        # Razorpay expects amount in paise (INR smallest unit)
+        amount_paise = int(request.amount * 100)
+
+        order_data = {
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": request.order_id or f"rcpt_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "payment_capture": 1  # Auto-capture payment
+        }
+
+        razorpay_order = razorpay_client.order.create(data=order_data)
+
+        return {
+            "success": True,
+            "razorpay_order_id": razorpay_order["id"],
+            "amount": razorpay_order["amount"],
+            "currency": razorpay_order["currency"],
+            "key_id": RAZORPAY_KEY_ID
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create Razorpay order: {str(e)}")
+
+
+@app.post("/api/v1/payment/verify")
+async def verify_razorpay_payment(request: PaymentVerifyRequest):
+    """Verify Razorpay payment signature and mark order as paid."""
+    try:
+        # Verify payment signature
+        params = {
+            "razorpay_order_id": request.razorpay_order_id,
+            "razorpay_payment_id": request.razorpay_payment_id,
+            "razorpay_signature": request.razorpay_signature
+        }
+        razorpay_client.utility.verify_payment_signature(params)
+    except razorpay.errors.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Payment signature verification failed")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Payment verification error: {str(e)}")
+
+    # Signature verified — create order record in orders.csv
+    try:
+        order_id = f"ORD{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        orders_path = Path(__file__).parent.parent / "data" / "orders.csv"
+
+        # Calculate total from items
+        total = 0
+        for item in request.items:
+            quantity = item.get("quantity", 1)
+            price = float(item.get("unit_price", 0))
+            total += quantity * price
+
+        fieldnames = ["order_id", "customer_id", "items", "total", "status",
+                      "created_at", "razorpay_payment_id"]
+        order_row = {
+            "order_id": order_id,
+            "customer_id": request.customer_id,
+            "items": str(len(request.items)),
+            "total": str(total),
+            "status": "paid",
+            "created_at": datetime.utcnow().isoformat(),
+            "razorpay_payment_id": request.razorpay_payment_id
+        }
+
+        file_exists = orders_path.exists()
+        with open(orders_path, "a", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(order_row)
+
+        # Clear the customer's cart after successful payment
+        carts = _load_carts()
+        carts = [c for c in carts if c["customer_id"] != request.customer_id]
+        _save_carts(carts)
+
+        return {
+            "success": True,
+            "message": f"Payment verified! Order {order_id} placed successfully. Total: ₹{total:.2f}",
+            "order_id": order_id,
+            "total": total,
+            "razorpay_payment_id": request.razorpay_payment_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Order creation failed: {str(e)}")
 
 
 @app.get("/health")
