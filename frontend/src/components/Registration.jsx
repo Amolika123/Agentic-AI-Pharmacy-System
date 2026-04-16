@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../LanguageContext'
 
+const API = import.meta.env.VITE_API_URL ?? ''
+
 // ═══════════════════════════════════════════════════════════════════════════
 // REGISTRATION COMPONENT - AI-guided conversational registration
 // Uses global language context for translations
@@ -30,7 +32,7 @@ function Registration({ onComplete, onSwitchToLogin }) {
         setRegistrationStarted(true)
 
         try {
-            const response = await fetch('/api/v1/register/start', {
+            const response = await fetch(`${API}/api/v1/register/start`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ language: langCode })
@@ -73,7 +75,7 @@ function Registration({ onComplete, onSwitchToLogin }) {
         setIsLoading(true)
 
         try {
-            const response = await fetch('/api/v1/register/step', {
+            const response = await fetch(`${API}/api/v1/register/step`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

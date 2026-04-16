@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 
+const API = import.meta.env.VITE_API_URL ?? ''
+
 // ═══════════════════════════════════════════════════════════════════════════
 // PATIENT SETTINGS - Side-tab navigation with profile, medical, security
 // ═══════════════════════════════════════════════════════════════════════════
@@ -63,7 +65,7 @@ function PatientSettings() {
 
     const loadUserData = async () => {
         try {
-            const response = await fetch(`/api/v1/customers`)
+            const response = await fetch(`${API}/api/v1/customers`)
             const data = await response.json()
             const customer = data.customers?.find(c => c.customer_id === customerId)
             if (customer) {

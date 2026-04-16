@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useLanguage } from '../LanguageContext'
 import { useAuth } from '../AuthContext'
 
+const API = import.meta.env.VITE_API_URL ?? ''
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SHOPPING CART COMPONENT - Cart panel with Razorpay payment checkout
 // Uses global language context for translations
@@ -65,7 +67,7 @@ function Cart({
             const totalAmount = calculateSubtotal()
 
             // 2. Create Razorpay order via backend
-            const createRes = await fetch('/api/v1/payment/create-order', {
+            const createRes = await fetch(`${API}/api/v1/payment/create-order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -99,7 +101,7 @@ function Cart({
                 handler: async function (response) {
                     // 4. Verify payment on backend
                     try {
-                        const verifyRes = await fetch('/api/v1/payment/verify', {
+                        const verifyRes = await fetch(`${API}/api/v1/payment/verify`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useLanguage } from '../LanguageContext'
 
+const API = import.meta.env.VITE_API_URL ?? ''
+
 // ═══════════════════════════════════════════════════════════════════════════
 // ADMIN DASHBOARD - ChatGPT-Style Single-Context Layout
 // Features: Side tab rail, one view at a time, clean focused UI
@@ -44,11 +46,11 @@ function AdminDashboard({ systemStatus }) {
     const fetchDashboardData = async () => {
         try {
             const [invRes, alertsRes, ordersRes, tracesRes, custRes] = await Promise.all([
-                fetch('/api/v1/inventory'),
-                fetch('/api/v1/alerts'),
-                fetch('/api/v1/orders'),
-                fetch('/api/v1/admin/traces'),
-                fetch('/api/v1/customers')
+                fetch(`${API}/api/v1/inventory`),
+                fetch(`${API}/api/v1/alerts`),
+                fetch(`${API}/api/v1/orders`),
+                fetch(`${API}/api/v1/admin/traces`),
+                fetch(`${API}/api/v1/customers`)
             ])
 
             const [invData, alertsData, ordersData, tracesData, custData] = await Promise.all([
@@ -138,7 +140,7 @@ function AdminDashboard({ systemStatus }) {
         if (!editingItem) return
 
         try {
-            const res = await fetch(`/api/v1/inventory/${editingItem.medicine_id}`, {
+            const res = await fetch(`${API}/api/v1/inventory/${editingItem.medicine_id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editForm)

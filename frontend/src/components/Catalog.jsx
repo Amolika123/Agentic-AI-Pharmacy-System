@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useLanguage } from '../LanguageContext'
 
+const API = import.meta.env.VITE_API_URL ?? ''
+
 // ═══════════════════════════════════════════════════════════════════════════
 // CATALOG/MARKETPLACE COMPONENT - Amazon-style product browsing
 // Uses global language context for translations
@@ -34,7 +36,7 @@ function Catalog({ onAddToCart, cartItems = [] }) {
 
     const fetchMedicines = async () => {
         try {
-            const response = await fetch('/api/v1/inventory')
+            const response = await fetch(`${API}/api/v1/inventory`)
             const data = await response.json()
             if (data.medicines) {
                 setMedicines(data.medicines)

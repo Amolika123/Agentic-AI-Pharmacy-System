@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../LanguageContext'
 
+const API = import.meta.env.VITE_API_URL ?? ''
+
 // ═══════════════════════════════════════════════════════════════════════════
 // CHAT COMPONENT - Uses global language context for translations
 // Chat messages persist in localStorage per customer
@@ -112,7 +114,7 @@ function Chat({ customerId, onCartUpdate }) {
 
     const fetchRefillAlerts = async () => {
         try {
-            const response = await fetch(`/api/v1/alerts/${customerId}`)
+            const response = await fetch(`${API}/api/v1/alerts/${customerId}`)
             const data = await response.json()
             if (data.alerts) {
                 setRefillAlerts(data.alerts)
@@ -124,7 +126,7 @@ function Chat({ customerId, onCartUpdate }) {
 
     const fetchSystemStatus = async () => {
         try {
-            const response = await fetch('/api/v1/admin/status')
+            const response = await fetch(`${API}/api/v1/admin/status`)
             const data = await response.json()
             setSystemStatus(data)
         } catch (error) {
@@ -213,7 +215,7 @@ function Chat({ customerId, onCartUpdate }) {
         setIsLoading(true)
 
         try {
-            const response = await fetch('/api/v1/chat', {
+            const response = await fetch(`${API}/api/v1/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -275,7 +277,7 @@ function Chat({ customerId, onCartUpdate }) {
         setIsLoading(true)
 
         try {
-            const response = await fetch('/api/v1/chat/confirm', {
+            const response = await fetch(`${API}/api/v1/chat/confirm`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -306,7 +308,7 @@ function Chat({ customerId, onCartUpdate }) {
         setIsLoading(true)
 
         try {
-            const response = await fetch('/api/v1/chat/confirm', {
+            const response = await fetch(`${API}/api/v1/chat/confirm`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -372,7 +374,7 @@ function Chat({ customerId, onCartUpdate }) {
             setIsLoading(true)
 
             try {
-                const response = await fetch('/api/v1/chat', {
+                const response = await fetch(`${API}/api/v1/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

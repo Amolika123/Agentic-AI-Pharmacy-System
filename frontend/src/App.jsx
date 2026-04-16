@@ -8,6 +8,8 @@ import Cart from './components/Cart'
 import LoginPage from './components/LoginPage'
 import PatientSettings from './components/PatientSettings'
 
+const API = import.meta.env.VITE_API_URL ?? ''
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN APP WITH ROLE-BASED ACCESS CONTROL
 // Patient Mode: Chat | Catalog | Cart (side tabs)
@@ -40,7 +42,7 @@ function AppContent() {
 
     const fetchSystemStatus = async () => {
         try {
-            const response = await fetch('/api/v1/admin/status')
+            const response = await fetch(`${API}/api/v1/admin/status`)
             const data = await response.json()
             setSystemStatus(data)
         } catch (error) {
@@ -51,7 +53,7 @@ function AppContent() {
     const clearCartAndLoad = async () => {
         try {
             // First clear the cart
-            await fetch(`/api/v1/cart/${effectiveCustomerId}`, { method: 'DELETE' })
+            await fetch(`${API}/api/v1/cart/${effectiveCustomerId}`, { method: 'DELETE' })
             setCartItems([])
             // Then load (will be empty, but good to sync)
             loadCart()
@@ -63,7 +65,7 @@ function AppContent() {
 
     const loadCart = async () => {
         try {
-            const response = await fetch(`/api/v1/cart/${effectiveCustomerId}`)
+            const response = await fetch(`${API}/api/v1/cart/${effectiveCustomerId}`)
             const data = await response.json()
             if (data.items) {
                 setCartItems(data.items)
@@ -83,7 +85,7 @@ function AppContent() {
         setTimeout(() => setCartNotification(false), 2000)
 
         try {
-            await fetch('/api/v1/cart/add', {
+            await fetch(`${API}/api/v1/cart/add`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -109,7 +111,7 @@ function AppContent() {
 
     const handleCheckout = async () => {
         try {
-            const response = await fetch('/api/v1/cart/checkout', {
+            const response = await fetch(`${API}/api/v1/cart/checkout`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
