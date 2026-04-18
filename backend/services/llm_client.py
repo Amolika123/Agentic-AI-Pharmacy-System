@@ -1,7 +1,7 @@
 import os
 import httpx
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama3-8b-8192"
 
@@ -10,12 +10,11 @@ async def generate_response(prompt: str, system_prompt: str = None) -> str:
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
     messages.append({"role": "user", "content": prompt})
-
     async with httpx.AsyncClient() as client:
         response = await client.post(
             GROQ_URL,
             headers={
-                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Authorization": f"Bearer {API_KEY}",
                 "Content-Type": "application/json"
             },
             json={
@@ -29,28 +28,24 @@ async def generate_response(prompt: str, system_prompt: str = None) -> str:
     data = response.json()
     return data["choices"][0]["message"]["content"]
 
-# Keep same interface as Ollama client
 async def chat(messages: list, system_prompt: str = None) -> str:
     return await generate_response(
         messages[-1]["content"] if messages else "",
         system_prompt
-    )# Compatibility object — keeps all existing imports working
-class LLMClient:
-    async def generate(self, prompt: str, system_prompt: str = None) -> str:
-        return await generate_response(prompt, system_prompt)
-    
-    async def chat(self, messages: list, system_prompt: str = None) -> str:
-        return await chat(messages, system_prompt)
+    )
 
-# This is what the rest of the app imports
-llm_client = LLMClient()
 class LLMClient:
-    async def generate(self, prompt: str, system_prompt: str = None) -> str:
+    async def generate(self, prompt, system_prompt=None):
         return await generate_response(prompt, system_prompt)
-    
-    async def chat(self, messages: list, system_prompt: str = None) -> str:
+    async def chat(self, messages, system_prompt=None):
         return await chat(messages, system_prompt)
-
-    async def check_ollama_available(self) -> bool:
-        # We're using Groq, not Ollama — always return True
+    async def check_ollama_available(self):
         return True
+    async def generate_response(self, prompt, system_prompt=None):
+        return await generate_response(prompt, system_prompt)
+    async def get_response(self, prompt, system_prompt=None):
+        return await generate_response(prompt, system_prompt)
+    async def complete(self, prompt, system_prompt=None):
+        return await generate_response(prompt, system_prompt)
+
+llm_client = LLMClient()
