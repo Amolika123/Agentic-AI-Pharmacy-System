@@ -44,3 +44,13 @@ class LLMClient:
 
 # This is what the rest of the app imports
 llm_client = LLMClient()
+class LLMClient:
+    async def generate(self, prompt: str, system_prompt: str = None) -> str:
+        return await generate_response(prompt, system_prompt)
+    
+    async def chat(self, messages: list, system_prompt: str = None) -> str:
+        return await chat(messages, system_prompt)
+
+    async def check_ollama_available(self) -> bool:
+        # We're using Groq, not Ollama — always return True
+        return True
