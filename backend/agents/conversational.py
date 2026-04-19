@@ -242,13 +242,40 @@ class ConversationalAgent(BaseAgent):
     async def _extract_pharmacy_entities(self, text: str, language: str) -> Dict[str, Any]:
         """Extract medicine names, dosages, quantities from natural text."""
         
+        import csv
+        from pathlib import Path
+        import re
+        
+        # Clean text to strip out intents like "refill", "reorder", etc.
+        # This prevents the extraction logic from treating "refill cetirizine" as the medicine name.
+        text_lower = text.lower()
+        filler_patterns = [
+            r"\bi want to refill\b",
+            r"\bi need to refill\b",
+            r"\brefill my\b",
+            r"\brefill\b",
+            r"\bi want to reorder\b",
+            r"\bi need to reorder\b",
+            r"\breorder my\b",
+            r"\breorder\b",
+            r"\bi need more\b",
+            r"\bplease order\b",
+            r"\bi want\b",
+            r"\bi need\b",
+            r"\bcan i get\b",
+            r"\bgive me\b"
+        ]
+        
+        clean_text = text_lower
+        for pattern in filler_patterns:
+            clean_text = re.sub(pattern, "", clean_text).strip()
+            
+        text_lower = clean_text
+        
         # ═══════════════════════════════════════════════════════════════════
         # PRIORITY: Pattern-based extraction (works even if LLM fails)
         # Match against known medicines from database first
         # ═══════════════════════════════════════════════════════════════════
-        import csv
-        from pathlib import Path
-        import re
         
         # Load known medicines
         medicines_path = Path(__file__).parent.parent / "data" / "medicines.csv"
@@ -260,7 +287,6 @@ class ConversationalAgent(BaseAgent):
                     known_medicines.append(row.get("name", "").lower())
         
         # Try pattern matching first
-        text_lower = text.lower()
         found_medicine = None
         found_quantity = 1
         found_dosage = None
@@ -325,7 +351,7 @@ class ConversationalAgent(BaseAgent):
         # Fallback to LLM for complex cases
         system_prompt = """You are a pharmacy assistant extracting order details from customer messages.
 Extract the following entities from the user's message:
-- medicine_name: The name of the medicine/drug mentioned (generic or brand name)
+- medicine_name: ONLY the precise name of the medicine/drug mentioned. STRIP OUT conversational words like "refill", "reorder", "my", "more" (e.g., "refill cetirizine" -> "Cetirizine"). Do NOT include conversational verbs in the medicine name.
 - quantity: Number of units, strips, bottles, or pills requested
 - dosage: Strength mentioned (e.g., 500mg, 10mg)
 - frequency: How often they take it (e.g., twice daily, once at night)
@@ -333,6 +359,7 @@ Extract the following entities from the user's message:
 - symptoms: List of symptoms mentioned (e.g. headache, fever)
 
 Rules:
+- Medicine name MUST NOT contain words like "refill", "reorder", "want", "need".
 - Handle common misspellings (paracetmol → paracetamol, crocin → Crocin)
 - Understand informal requests ("fever medicine" → antipyretic)
 - Handle quantities like "2 strips", "1 bottle", "enough for a month"
@@ -342,7 +369,7 @@ Respond ONLY with valid JSON."""
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text}
+            {"role": "user", "content": clean_text}
         ]
         
         response = await self.llm.chat(messages, temperature=0.2, json_mode=True)
