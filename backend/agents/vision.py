@@ -152,58 +152,69 @@ class VisionAgent(BaseAgent):
             )
     
     async def _analyze_prescription_image(self, image_base64: str) -> Dict[str, Any]:
-        """Use local EasyOCR to extract prescription details offline."""
-        import easyocr
-        import numpy as np
+        """Use Groq vision API to extract prescription details."""
+        import httpx
         import base64
+        import os
         import re
-        from io import BytesIO
-        from PIL import Image
         
         try:
-            # 1. Decode base64 to image bytes
             if "," in image_base64:
                 image_base64 = image_base64.split(",")[1]
             
-            image_bytes = base64.b64decode(image_base64)
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {os.environ.get('GROQ_API_KEY')}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": f"data:image/jpeg;base64,{image_base64}"
+                                        }
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "Extract all medicine names, dosages and quantities from this prescription. Return them as a simple list."
+                                    }
+                                ]
+                            }
+                        ],
+                        "max_tokens": 500
+                    },
+                    timeout=30.0
+                )
             
-            # 2. Initialize EasyOCR Reader (Local, Offline)
-            # Use English by default as per requirements.
-            # Using 'en' only for speed and reliability, but supports others.
-            reader = easyocr.Reader(['en'], gpu=False, verbose=False) # CPU safe mode
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
             
-            # 3. Read text from image bytes
-            # EasyOCR reads bytes directly
-            raw_results = reader.readtext(image_bytes)
+            print(f"[VISION] Groq Extracted: {content}")
             
-            # 4. Process results
-            # Format: [(bbox, text, confidence), ...]
-            detected_lines = []
-            full_text = []
+            # Format text list as list of dicts for local parsing
+            lines = content.strip().split("\n")
+            detected_lines = [{"text": line.strip(), "confidence": 0.9} for line in lines if line.strip()]
+            full_text = [line.strip() for line in lines if line.strip()]
             
-            for (bbox, text, prob) in raw_results:
-                if prob > 0.3: # Filter low confidence
-                    detected_lines.append({
-                        "text": text,
-                        "confidence": float(prob)
-                    })
-                    full_text.append(text)
-            
-            print(f"[VISION] EasyOCR Extracted: {full_text}")
-            
-            # 5. Local Parsing & Medicine Matching
+            # Local Parsing & Medicine Matching
             extracted_medicines = self._parse_extracted_text(detected_lines)
             
-            # 6. Structure response
             return {
                 "medicines": extracted_medicines,
-                "confidence": sum([l['confidence'] for l in detected_lines]) / max(len(detected_lines), 1),
-                "partial_extraction": len(extracted_medicines) == 0, # If we found text but no medicines
+                "confidence": 0.9,
+                "partial_extraction": len(extracted_medicines) == 0,
                 "raw_text": full_text
             }
                         
         except Exception as e:
-            print(f"[VISION ERROR] EasyOCR failed: {e}")
+            print(f"[VISION ERROR] Groq API failed: {e}")
             return {"medicines": [], "error": str(e), "partial_extraction": False}
 
     def _parse_extracted_text(self, lines: List[Dict]) -> List[Dict]:
