@@ -81,6 +81,14 @@ class VisionAgent(BaseAgent):
             medicines = extracted.get("medicines", [])
             is_partial = extracted.get("partial_extraction", False)
             
+            if not extracted.get("is_valid", True):
+                reason = extracted.get("reason", "This doesn't appear to be a valid prescription.")
+                return AgentResponse(
+                    success=False,
+                    data={"error": "invalid_prescription", "reason": reason},
+                    message=f"❌ **Prescription Rejected**\n\n{reason}\n\nPlease upload a valid prescription image containing a doctor's details and date."
+                )
+            
             # ═══════════════════════════════════════════════════════════════
             # FAIL-SAFE BEHAVIOR: Never say "couldn't read" - always show results
             # ═══════════════════════════════════════════════════════════════
@@ -183,7 +191,7 @@ class VisionAgent(BaseAgent):
                                     },
                                     {
                                         "type": "text",
-                                        "text": "Extract all medicine names, dosages and quantities from this prescription. Return them as a simple list."
+                                        "text": "Analyze this prescription image and return a JSON response.\n\nYou must do TWO things:\n1. Validate the prescription legitimacy.\n2. Extract all medicine names, dosages and quantities.\n\nVALID prescription must have:\n- Doctor's name or clinic name\n- Doctor's signature or stamp\n- Patient name\n- Date of prescription\n- At least one medicine with dosage\n\nINVALID if:\n- It's a random image (food, selfie, screenshot, etc.)\n- No doctor information visible\n- No date\n- Clearly handwritten notes with no medical context\n- Blank or unreadable image\n\nRespond ONLY with a JSON object in this format:\n{\n  \"is_valid\": true,\n  \"confidence\": \"high\",\n  \"reason\": \"explanation if invalid\",\n  \"medicines\": [\"Medicine 1\", \"Medicine 2\"],\n  \"doctor_name\": \"Dr. XYZ if found\",\n  \"date\": \"date if found\"\n}"
                                     }
                                 ]
                             }
@@ -197,6 +205,45 @@ class VisionAgent(BaseAgent):
             content = data["choices"][0]["message"]["content"]
             
             print(f"[VISION] Groq Extracted: {content}")
+            
+            import json
+            try:
+                start_idx = content.find('{')
+                end_idx = content.rfind('}') + 1
+                if start_idx != -1 and end_idx != -1:
+                    parsed = json.loads(content[start_idx:end_idx])
+                    is_valid = parsed.get("is_valid", True)
+                    doc_name = parsed.get("doctor_name", "")
+                    date_val = parsed.get("date", "")
+                    med_list = parsed.get("medicines", [])
+                    reason = parsed.get("reason", "Invalid prescription")
+                    
+                    if not is_valid:
+                        return {
+                            "is_valid": False,
+                            "reason": reason,
+                            "medicines": [],
+                            "confidence": 1.0,
+                            "partial_extraction": False,
+                            "raw_text": []
+                        }
+                    
+                    lines = [str(m).strip() for m in med_list if str(m).strip()]
+                    detected_lines = [{"text": line, "confidence": 0.9} for line in lines]
+                    full_text = lines
+                    extracted_medicines = self._parse_extracted_text(detected_lines)
+                    
+                    return {
+                        "is_valid": True,
+                        "medicines": extracted_medicines,
+                        "doctor_name": doc_name,
+                        "date": date_val,
+                        "confidence": 0.9,
+                        "partial_extraction": len(extracted_medicines) == 0,
+                        "raw_text": full_text
+                    }
+            except Exception as e:
+                print(f"[VISION ERROR] JSON parsing failed, falling back to basic lines: {e}")
             
             # Format text list as list of dicts for local parsing
             lines = content.strip().split("\n")
