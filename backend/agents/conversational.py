@@ -111,75 +111,87 @@ class ConversationalAgent(BaseAgent):
                     action_type="cancel_confirmation"
                 )
             
-            # Step 1: Detect language
-            language_result = await self.llm.detect_language(user_message)
-            context.language = language_result.get("language", "en")
+            # Step 1: Default language to English
+            context.language = "en"
             
             # ═══════════════════════════════════════════════════════════════════
-            # PRIORITY: Keyword-based intent detection (works even if LLM fails)
-            # This ensures reliable intent detection for common pharmacy requests
+            # PRIORITY: Keyword-based intent detection
             # ═══════════════════════════════════════════════════════════════════
             msg_lower = user_message.lower().strip()
+            
+            question_keywords = ["what", "how", "can i", "side effect", "dosage", "what do", "advice", "suggest", "symptom"]
+            order_keywords = ["i need", "i want", "give me", "order", "buy", "get me", "can i have", "chahiye", "mujhe", "bestellen"]
+            symptom_keywords = ["i have", "pain", "ache", "fever", "headache", "cold", "cough", "stomach", "dard", "bukhar"]
+            
             intent = None
             
-            # Order medicine keywords (multi-language)
-            ORDER_KEYWORDS = [
-                # English
-                "i need", "i want", "give me", "order", "buy", "get me", "can i have",
-                "please give", "i would like", "i'd like", "need to order", "want to order",
-                # Hindi
-                "chahiye", "mujhe", "order karo", "de do", "dena",
-                # German  
-                "ich brauche", "ich möchte", "bestellen", "gib mir"
-            ]
+            # Determine if message is a question/symptom or an order
+            is_question_or_symptom = any(kw in msg_lower for kw in question_keywords) or any(kw in msg_lower for kw in symptom_keywords)
+            is_order = any(kw in msg_lower for kw in order_keywords)
             
-            # Check availability keywords
-            AVAILABILITY_KEYWORDS = [
-                "do you have", "is available", "in stock", "availability", "check if",
-                "hai kya", "milega", "verfügbar", "haben sie"
-            ]
-            
-            # Symptom/advice keywords
-            SYMPTOM_KEYWORDS = [
-                "i have", "suffering from", "feeling", "pain", "ache", "fever",
-                "headache", "cold", "cough", "stomach", "suggest", "recommend",
-                "dard", "bukhar", "sardi", "schmerz", "fieber"
-            ]
-            
-            # Detect intent from keywords
-            for kw in ORDER_KEYWORDS:
-                if kw in msg_lower:
-                    intent = "order_medicine"
-                    print(f"[CONV] Keyword detected: '{kw}' → order_medicine")
-                    break
-            
-            if not intent:
-                for kw in AVAILABILITY_KEYWORDS:
-                    if kw in msg_lower:
-                        intent = "check_availability"
-                        print(f"[CONV] Keyword detected: '{kw}' → check_availability")
-                        break
-            
-            if not intent:
-                for kw in SYMPTOM_KEYWORDS:
-                    if kw in msg_lower:
-                        intent = "report_symptoms"
-                        print(f"[CONV] Keyword detected: '{kw}' → report_symptoms")
-                        break
-            
-            # Fallback to LLM only if no keyword match
-            if not intent:
-                # Step 2: Classify intent via LLM
-                intent_result = await self.llm.classify_intent(user_message, self.supported_intents)
-                intent = intent_result.get("intent", "general_query")
+            if is_question_or_symptom and not is_order:
+                intent = "general_query"
+            elif is_order:
+                intent = "order_medicine"
             else:
-                intent_result = {"intent": intent, "confidence": 0.95, "method": "keyword"}
+                intent = "general_query"  # Default to treating it as a conversational question
             
-            # Correction: Map ask_advice to report_symptoms if generic medical advice
-            if intent == "ask_advice" and "symptoms" in user_message.lower():
-                intent = "report_symptoms"
+            
+            if intent == "general_query":
+                # Route general medical questions to the LLM for a proper answer
+                system_prompt = """You are a helpful AI pharmacy assistant. You work for an online pharmacy 
+called Agentic Pharmacy.
 
-            # Step 3: Extract pharmacy-specific entities
+You can help patients with:
+- Ordering medicines by name and dosage
+- Answering questions about medicines, side effects, dosages, 
+  and drug interactions
+- Suggesting medicines based on symptoms (always recommend 
+  consulting a doctor for serious conditions)
+- Checking medicine availability
+- Managing orders (cancel, track, refill)
+- General health and pharmacy advice
+
+IMPORTANT RULES:
+- Always respond in a helpful, friendly, and professional tone
+- For symptom-based questions, suggest common OTC medicines 
+  but always add "Please consult a doctor if symptoms persist"
+- Never refuse a medicine-related or health-related question
+- If someone asks about ordering, extract the medicine name, 
+  dosage, and quantity
+- Keep responses concise and clear
+- You are serving patients in India so use Indian medicine 
+  brand names where relevant
+- For serious medical emergencies always say "Please call 
+  emergency services immediately"
+
+RESPONSE FORMAT for ordering:
+- If the user wants to order a medicine, respond with the 
+  medicine details and ask for confirmation
+- If the user is asking a question, answer it directly and helpfully
+- Never say "I couldn't understand" for any medicine or 
+  health related question"""
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ]
+                response_text = await self.llm.chat(messages)
+                
+                # Update context
+                context.set_entity("intent", intent)
+                
+                if span:
+                    span.end(output={"intent": intent, "response": response_text})
+                
+                return AgentResponse(
+                    success=True,
+                    data={"intent": intent, "entities": {}, "language": context.language},
+                    message=response_text,
+                    next_agent=None,
+                    requires_action=False
+                )
+
+            # Step 2: Extract pharmacy-specific entities for orders
             entities = await self._extract_pharmacy_entities(user_message, context.language)
             
             # Store in context
@@ -191,16 +203,6 @@ class ConversationalAgent(BaseAgent):
             # Determine next agent based on intent
             next_agent = self._route_to_next_agent(intent)
             
-            # Log decision
-            await self.log_decision(
-                trace=trace,
-                decision=f"classified_intent_{intent}",
-                reasoning=f"User wants to {intent}. Extracted entities: {list(entities.keys())}",
-                confidence=intent_result.get("confidence", 0.8),
-                input_data={"message": user_message},
-                output_data={"intent": intent, "entities": entities}
-            )
-            
             if span:
                 span.end(output={"intent": intent, "entities": entities})
             
@@ -209,12 +211,11 @@ class ConversationalAgent(BaseAgent):
                 data={
                     "intent": intent,
                     "entities": entities,
-                    "language": context.language,
-                    "requires_clarification": intent_result.get("requires_clarification", False)
+                    "language": context.language
                 },
                 message=await self._generate_acknowledgment(intent, entities, context.language),
                 next_agent=next_agent,
-                requires_action=intent in ["order_medicine", "refill_prescription", "confirm_order", "report_symptoms", "upload_prescription"]
+                requires_action=intent in ["order_medicine", "refill_prescription", "confirm_order", "upload_prescription"]
             )
             
         except Exception as e:
@@ -372,7 +373,7 @@ Respond ONLY with valid JSON."""
             {"role": "user", "content": clean_text}
         ]
         
-        response = await self.llm.chat(messages, temperature=0.2, json_mode=True)
+        response = await self.llm.chat(messages)
         
         try:
             return json.loads(response)
