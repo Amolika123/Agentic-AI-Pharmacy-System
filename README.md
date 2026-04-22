@@ -1,6 +1,6 @@
 # Agentic AI Pharmacy System 🏥💊
 
-A fully autonomous, AI-powered pharmacy system built with **FastAPI** + **React (Vite)**, using **local Ollama LLM (llama3.2-vision)** — **NO API KEYS REQUIRED**.
+A fully autonomous, AI-powered pharmacy system built with **FastAPI** + **React (Vite)**, using the **Groq API (llama-3.1-8b-instant)** for blistering fast natural language understanding.
 
 Patients can order medicines via natural language (text or voice), upload prescriptions for OCR-based extraction, and receive proactive refill reminders. The system enforces pharmaceutical safety rules (prescription checks, allergy warnings, stock validation) through a multi-agent architecture.
 
@@ -74,22 +74,15 @@ Patients can order medicines via natural language (text or voice), upload prescr
 | **Python** | 3.10+ | Tested with Python 3.11 |
 | **Node.js** | 18+ | For the React frontend |
 | **npm** | 9+ | Comes with Node.js |
-| **Ollama** | Latest | Local LLM runtime — [download here](https://ollama.ai) |
+| **Groq API Key** | Required | Required for the Conversational Agent to process natural language. [Get it here](https://console.groq.com) |
 
 ---
 
 ## 🚀 Getting Started
 
-### Step 1 — Install & Start Ollama
+### Step 1 — Get a Groq API Key
 
-Download Ollama from [https://ollama.ai](https://ollama.ai), then pull the required model and start the server:
-
-```bash
-ollama pull llama3.2-vision
-ollama serve
-```
-
-> **Note:** Ollama must be running on `http://localhost:11434` before starting the backend. The system will still start without it but in a degraded mode.
+The system relies on Groq for ultra-fast, intelligent agentic dialogue. You must create an account at [GroqCloud](https://console.groq.com) and generate an API key (`GROQ_API_KEY`).
 
 ---
 
@@ -138,8 +131,7 @@ python -m uvicorn api.main:app --reload
 The API will be available at **http://localhost:8000**. You should see:
 
 ```
-[OK] Ollama connected - llama3.2-vision ready
-[OK] Agentic Pharmacy System API ready (NO API KEYS NEEDED)
+[OK] Agentic Pharmacy System API ready
 ```
 
 > **Troubleshooting:** If you get `No module named uvicorn`, make sure you've activated your virtual environment and installed the requirements:
@@ -336,9 +328,8 @@ All data is stored in CSV files under `backend/data/`:
 Create `backend/.env` from the template (or it's already present):
 
 ```env
-# Ollama Configuration (local LLM) — required
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2-vision
+# Groq API Configuration — REQUIRED
+GROQ_API_KEY=your_groq_key_here
 
 # Optional: Langfuse observability (leave empty for local mock tracing)
 LANGFUSE_PUBLIC_KEY=
@@ -346,7 +337,7 @@ LANGFUSE_SECRET_KEY=
 LANGFUSE_HOST=https://cloud.langfuse.com
 ```
 
-> No external API keys are required for core functionality. Langfuse keys are only needed if you want cloud-based trace storage.
+> The `GROQ_API_KEY` is absolutely required for core functionality. Langfuse keys are only needed if you want cloud-based trace storage.
 
 ---
 
@@ -382,7 +373,7 @@ Agent: 📋 Detected from prescription: Amoxicillin 500mg, Ibuprofen 200mg.
 |-------|-----------|
 | **Frontend** | React 18, Vite 5, Vanilla CSS |
 | **Backend** | Python 3.11, FastAPI, Uvicorn |
-| **LLM** | Ollama (llama3.2-vision) — runs locally |
+| **LLM** | Groq API (`llama-3.1-8b-instant`) |
 | **OCR** | EasyOCR |
 | **Auth** | JWT (python-jose), bcrypt (passlib) |
 | **Observability** | Langfuse (optional) |
@@ -392,10 +383,11 @@ Agent: 📋 Detected from prescription: Amoxicillin 500mg, Ibuprofen 200mg.
 
 ## 🐛 Troubleshooting
 
-| Problem | Solution |
+| **Problem** | **Solution** |
 |---------|----------|
 | `No module named uvicorn` | Activate your virtual environment: `.venv\Scripts\activate` (Windows) then `pip install -r requirements.txt` |
-| `Ollama not detected` | Make sure Ollama is running: `ollama serve` |
+| `API Error 401 Unauthorized` | Make sure your `GROQ_API_KEY` in `backend/.env` is valid and active. |
+| `GROQ_API_KEY not set` | You must add your Groq API key to `backend/.env`. Check `backend/.env.example` for details. |
 | Frontend can't reach backend | Ensure the backend is running on port 8000; Vite proxies `/api/*` automatically |
 | `ENOENT` on `npm install` | Make sure you're in the `frontend/` directory |
 | EasyOCR download slow | First run downloads OCR models (~100MB); subsequent starts are fast |
