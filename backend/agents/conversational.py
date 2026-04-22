@@ -114,14 +114,35 @@ class ConversationalAgent(BaseAgent):
             # Step 1: Default language to English
             context.language = "en"
             
+            # --- TASK 3: Empty / Gibberish Check ---
+            msg_lower = user_message.lower().strip()
+            
+            if not msg_lower:
+                return AgentResponse(
+                    success=False,
+                    data={"error": "empty_input"},
+                    message="I'm sorry, I couldn't understand that. Could you please rephrase?"
+                )
+                
+            # Basic gibberish check (no vowels, random string)
+            has_vowels = any(v in msg_lower for v in "aeiouy")
+            is_too_short_and_weird = len(msg_lower) < 4 and not msg_lower.isalnum()
+            # exceptions for short valid acronyms could be handled here if needed
+            if not has_vowels and is_too_short_and_weird:
+                return AgentResponse(
+                    success=False,
+                    data={"error": "gibberish"},
+                    message="I'm sorry, I couldn't understand that. Could you please rephrase?"
+                )
+            # ---------------------------------------
+            
             # ═══════════════════════════════════════════════════════════════════
             # PRIORITY: Keyword-based intent detection
             # ═══════════════════════════════════════════════════════════════════
-            msg_lower = user_message.lower().strip()
             
-            question_keywords = ["what", "how", "can i", "side effect", "dosage", "what do", "advice", "suggest", "symptom"]
+            question_keywords = ["what", "how", "can i", "side effect", "dosage", "what do", "advice", "suggest", "symptom", "why", "when", "is"]
             order_keywords = ["i need", "i want", "give me", "order", "buy", "get me", "can i have", "chahiye", "mujhe", "bestellen"]
-            symptom_keywords = ["i have", "pain", "ache", "fever", "headache", "cold", "cough", "stomach", "dard", "bukhar"]
+            symptom_keywords = ["i have", "pain", "ache", "fever", "headache", "cold", "cough", "stomach", "dard", "bukhar", "head"]
             
             intent = None
             
@@ -134,12 +155,17 @@ class ConversationalAgent(BaseAgent):
             elif is_order:
                 intent = "order_medicine"
             else:
-                intent = "general_query"  # Default to treating it as a conversational question
+                intent = "catch_all_query"  # TASK 4 Catch-all
             
-            
-            if intent == "general_query":
+            # Use general_query (original prompt) or catch_all_query (new simple prompt)
+            if intent in ["general_query", "catch_all_query"]:
                 # Route general medical questions to the LLM for a proper answer
-                system_prompt = """You are a helpful AI pharmacy assistant. You work for an online pharmacy 
+                if intent == "catch_all_query":
+                    # TASK 4: Catch-all route
+                    system_prompt = "You are a helpful pharmacy assistant. Answer this health or medicine related question helpfully and concisely."
+                else:    
+                    # Original detail-oriented general query prompt
+                    system_prompt = """You are a helpful AI pharmacy assistant. You work for an online pharmacy 
 called Agentic Pharmacy.
 
 You can help patients with:
@@ -171,6 +197,7 @@ RESPONSE FORMAT for ordering:
 - If the user is asking a question, answer it directly and helpfully
 - Never say "I couldn't understand" for any medicine or 
   health related question"""
+                
                 messages = [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
@@ -221,10 +248,17 @@ RESPONSE FORMAT for ordering:
         except Exception as e:
             if span:
                 span.end(output={"error": str(e)})
+            
+            error_message = str(e)
+            
+            # DO NOT return the generic "I couldn't understand" message on LLM errors.
+            # We want to surface the exact error (e.g. 401 Unauthorized for bad API Key).
+            friendly_message = f"LLM Error: {error_message} (Please check your API key / LLM connection)"
+            
             return AgentResponse(
                 success=False,
-                data={"error": str(e)},
-                message="I'm sorry, I couldn't understand that. Could you please rephrase?"
+                data={"error": error_message},
+                message=friendly_message
             )
     
     def _detect_cancellation_intent(self, message: str) -> bool:
