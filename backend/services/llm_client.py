@@ -6,7 +6,7 @@ def get_groq_api_key():
     return key if key else None
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama3-8b-8192"
+GROQ_MODEL = "llama-3.1-8b-instant"
 
 async def chat(messages: list, system_prompt: str = None) -> str:
     # If system_prompt is provided as kwarg, inject it (for legacy support)
@@ -38,6 +38,13 @@ async def chat(messages: list, system_prompt: str = None) -> str:
             response.raise_for_status()
             data = response.json()
             return data["choices"][0]["message"]["content"]
+    except httpx.HTTPStatusError as e:
+        try:
+            error_details = e.response.json()
+        except:
+            error_details = e.response.text
+        print(f"[LLMClient] API Error: {error_details}")
+        raise Exception(f"API Error {e.response.status_code}: {error_details}")
     except Exception as e:
         print(f"[LLMClient] Error: {e}")
         raise e
